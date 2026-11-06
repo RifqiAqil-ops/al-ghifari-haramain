@@ -1,0 +1,171 @@
+// Google Fonts: Plus Jakarta Sans & Outfit
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+// Al Ghifari Haramain Design System Tokens
+$font-family-sans-serif: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+$headings-font-family: 'Outfit', sans-serif;
+
+// Brand Colors
+$dark-forest-green: #073B2E;
+$deep-emerald: #0B4939;
+$royal-gold: #C9A45B;
+$light-gold: #E5CF96;
+$obsidian-black: #080B09;
+$warm-ivory: #F5F0E5;
+$white: #FFFFFF;
+$muted-gray: #8A918D;
+
+// Bootstrap Color Overrides
+$primary: $dark-forest-green;
+$secondary: $royal-gold;
+$success: #198754;
+$info: #0dcaf0;
+$warning: $royal-gold;
+$danger: #dc3545;
+$light: $warm-ivory;
+$dark: $obsidian-black;
+
+$body-bg: #F8F9FA;
+$body-color: #212529;
+
+// Import Bootstrap Icons and Bootstrap
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "bootstrap/scss/bootstrap";
+
+// Custom Design Utilities & Identity
+:root {
+    --brand-forest-green: #073B2E;
+    --brand-deep-emerald: #0B4939;
+    --brand-royal-gold: #C9A45B;
+    --brand-light-gold: #E5CF96;
+    --brand-obsidian: #080B09;
+    --brand-warm-ivory: #F5F0E5;
+    --brand-muted-gray: #8A918D;
+}
+
+// Global Brand Styling
+.bg-forest-green {
+    background-color: var(--brand-forest-green) !important;
+}
+
+.bg-emerald {
+    background-color: var(--brand-deep-emerald) !important;
+}
+
+.bg-royal-gold {
+    background-color: var(--brand-royal-gold) !important;
+}
+
+.bg-light-gold {
+    background-color: var(--brand-light-gold) !important;
+}
+
+.bg-warm-ivory {
+    background-color: var(--brand-warm-ivory) !important;
+}
+
+.text-forest-green {
+    color: var(--brand-forest-green) !important;
+}
+
+.text-royal-gold {
+    color: var(--brand-royal-gold) !important;
+}
+
+.border-royal-gold {
+    border-color: var(--brand-royal-gold) !important;
+}
+
+.btn-royal-gold {
+    background-color: var(--brand-royal-gold);
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    transition: all 0.25s ease-in-out;
+    &:hover {
+        background-color: darken(#C9A45B, 8%);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(201, 164, 91, 0.35);
+    }
+}
+
+.btn-forest-green {
+    background-color: var(--brand-forest-green);
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    transition: all 0.25s ease-in-out;
+    &:hover {
+        background-color: var(--brand-deep-emerald);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(7, 59, 46, 0.35);
+    }
+}
+
+// Brand Logo Styling Helper
+.brand-logo-img {
+    object-fit: contain;
+    max-height: 100%;
+}
+
+// Cards with subtle soft shadow & rounded corners
+.card-premium {
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 6px 18px rgba(7, 59, 46, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    &:hover {
+        box-shadow: 0 10px 24px rgba(7, 59, 46, 0.08);
+    }
+}
+
+// Global Pagination & Svg Arrow Sizing
+nav[role="navigation"] svg,
+.pagination svg {
+    width: 1rem !important;
+    height: 1rem !important;
+    max-width: 1rem !important;
+    max-height: 1rem !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+.pagination {
+    margin-bottom: 0;
+    gap: 4px;
+    flex-wrap: wrap;
+
+    .page-item {
+        .page-link {
+            color: $dark-forest-green;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.25;
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: $warm-ivory;
+                color: $dark-forest-green;
+                border-color: $royal-gold;
+            }
+        }
+
+        &.active .page-link {
+            background-color: $dark-forest-green;
+            border-color: $dark-forest-green;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        &.disabled .page-link {
+            color: $muted-gray;
+            background-color: #F8F9FA;
+            border-color: #E2E8F0;
+        }
+    }
+}

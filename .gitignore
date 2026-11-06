@@ -1,0 +1,75 @@
+# =============================================================================
+# AL GHIFARI HARAMAIN - GITIGNORE CONFIGURATION
+# =============================================================================
+
+# Environment & Secrets (Hanya .env.example yang diizinkan masuk repo)
+.env
+.env.*
+!.env.example
+
+# Composer & Node Dependencies
+/vendor
+/node_modules
+/auth.json
+
+# Build Outputs, Staging Bundles & Archives
+/public/build
+/public/hot
+/public/storage
+/deployment/packages/
+/deployment/staging_public_html/
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# Database Dumps, Backups & SQLite Files
+*.sql
+*.sqlite
+*.sqlite-journal
+*.sqlite3
+
+# Storage, Logs & Temporary Cache Files
+*.log
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/*.key
+/storage/pail
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitignore
+/storage/framework/cache/laravel-excel/*
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+.phpunit.result.cache
+/.phpunit.cache
+
+# Credentials, Keys & Certificates
+*.pem
+*.key
+*.cert
+*.crt
+id_rsa*
+id_ed25519*
+
+# Temporary & Editor Files
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+Homestead.json
+Homestead.yaml
+.phpactor.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
