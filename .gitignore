@@ -13,7 +13,7 @@
 /auth.json
 
 # Build Outputs, Staging Bundles & Archives
-/public/build
+# Catatan: /public/build dilacak agar aset CSS/JS hasil npm run build lokal dapat dideploy via Git ke cPanel
 /public/hot
 /public/storage
 /deployment/packages/

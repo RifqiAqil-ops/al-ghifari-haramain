@@ -1,0 +1,77 @@
+---
+# =============================================================================
+# AL GHIFARI HARAMAIN - FINAL HARDENED CPANEL DEPLOYMENT CONFIGURATION (.cpanel.yml)
+# Server Target   : AnymHost (cPanel)
+# Repository Path : /home/xonkgvsz/repositories/al-ghifari-haramain
+# Core Path       : /home/xonkgvsz/al-ghifari-core
+# Public Web Root : /home/xonkgvsz/public_html
+# =============================================================================
+# CATATAN SIKLUS HIDUP & KEGAGALAN PARSIAL (PARTIAL FAILURE BEHAVIOR):
+# 1. cPanel Git Version Control mengeksekusi setiap task secara BERURUTAN (sequential).
+# 2. Jika salah satu task gagal (exit code != 0), cPanel berhenti seketika.
+# 3. Model ini BUKAN atomic symlink-swapping release (bukan blue-green).
+#    Jika task 4 atau 5 terhenti di tengah jalan (misal: disk penuh atau server kill),
+#    produksi akan berada dalam kondisi sebagian diperbarui (partially deployed).
+# 4. PROSEDUR ROLLBACK MANUAL:
+#    Karena Task 2 telah mencadangkan dan memverifikasi snapshot 100% bit-for-bit SHA-256
+#    ke pointer 'latest' SEBELUM Task 4 & 5 menyentuh file apa pun, operator cukup
+#    menjalankan perintah pemulihan berikut melalui cPanel Terminal:
+#      /bin/bash /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/rollback_deployment.sh
+# =============================================================================
+
+deployment:
+  tasks:
+    # -------------------------------------------------------------------------
+    # TAHAP 1: PRE-DEPLOYMENT AUDIT & INTEGRITY CHECK (FAIL-FAST ASSERTIONS)
+    # Menjalankan skrip audit lingkungan (disk, permissions, symlinks, .env, vendor, Vite build).
+    # Jika ada kegagalan, proses berhenti SEKETIKA (0 file produksi diubah).
+    # -------------------------------------------------------------------------
+    - /bin/bash /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/pre_deployment_check.sh
+
+    # -------------------------------------------------------------------------
+    # TAHAP 2: SNAPSHOT PRE-DEPLOYMENT LENGKAP & UNIK (STRATEGI ROLLBACK)
+    # Mencadangkan seluruh komponen Core & Public yang akan diubah ke direktori
+    # snapshot ber-timestamp unik (/home/xonkgvsz/al-ghifari-core-backups/snapshot_YYYYMMDD_HHMMSS_PID_RAND/).
+    # Menjamin 100% verifikasi bit-for-bit SHA-256 sebelum deployment dimulai.
+    # Pointer 'latest' diperbarui secara atomik untuk pemulihan cepat (fast rollback).
+    # .env, vendor, dan storage/app/public TIDAK DIMASUKKAN ke snapshot.
+    # -------------------------------------------------------------------------
+    - /bin/bash /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/create_deployment_snapshot.sh
+
+    # -------------------------------------------------------------------------
+    # TAHAP 3: PERSIAPAN STRUKTUR DIREKTORI (PATH ABSOLUT PENUH)
+    # Memastikan direktori target tersedia secara idempoten tanpa dependensi variabel shell.
+    # -------------------------------------------------------------------------
+    - /bin/mkdir -p /home/xonkgvsz/al-ghifari-core/app /home/xonkgvsz/al-ghifari-core/bootstrap /home/xonkgvsz/al-ghifari-core/config /home/xonkgvsz/al-ghifari-core/database /home/xonkgvsz/al-ghifari-core/resources /home/xonkgvsz/al-ghifari-core/routes /home/xonkgvsz/public_html/assets /home/xonkgvsz/public_html/build
+
+    # -------------------------------------------------------------------------
+    # TAHAP 4: DEPLOYMENT ZONA PRIVATE (/home/xonkgvsz/al-ghifari-core/)
+    # ATURAN KEAMANAN MUTLAK:
+    # 1. File .env produksi TIDAK DISENTUH / TIDAK DITIMPA.
+    # 2. Folder storage/app/public (berisi dokumen jamaah & bukti bayar) TIDAK DIHAPUS.
+    # 3. Folder vendor/ dependensi PHP produksi DIPERTAHANKAN.
+    # 4. TIDAK ADA eksekusi migration, seeder, atau manipulasi database.
+    # -------------------------------------------------------------------------
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/config/. /home/xonkgvsz/al-ghifari-core/config/
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/resources/. /home/xonkgvsz/al-ghifari-core/resources/
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/routes/. /home/xonkgvsz/al-ghifari-core/routes/
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/database/. /home/xonkgvsz/al-ghifari-core/database/
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/app/. /home/xonkgvsz/al-ghifari-core/app/
+    - /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/bootstrap/app.php /home/xonkgvsz/repositories/al-ghifari-haramain/bootstrap/providers.php /home/xonkgvsz/al-ghifari-core/bootstrap/
+    - if [ -d /home/xonkgvsz/repositories/al-ghifari-haramain/lang ]; then /bin/mkdir -p /home/xonkgvsz/al-ghifari-core/lang && /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/lang/. /home/xonkgvsz/al-ghifari-core/lang/; fi
+    - /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/artisan /home/xonkgvsz/repositories/al-ghifari-haramain/composer.json /home/xonkgvsz/repositories/al-ghifari-haramain/composer.lock /home/xonkgvsz/repositories/al-ghifari-haramain/package.json /home/xonkgvsz/repositories/al-ghifari-haramain/package-lock.json /home/xonkgvsz/al-ghifari-core/
+
+    # -------------------------------------------------------------------------
+    # TAHAP 5: DEPLOYMENT ZONA PUBLIK (/home/xonkgvsz/public_html/)
+    # ATURAN KEAMANAN MUTLAK:
+    # 1. public/index.php bawaan Laravel DIKECUALIKAN; gunakan deployment/cpanel_public_html/index.php.
+    # 2. .htaccess aktif diverifikasi: jika berbeda, cadangkan ber-timestamp sebelum pembaruan.
+    #    Kegagalan backup akan menghentikan proses (tanpa || true).
+    # 3. Proteksi dokumen jamaah (storage/jamaah_documents/) dipertahankan 100%.
+    # 4. Aset build Vite disinkronkan dari hasil verifikasi manifest Tahap 1.
+    # -------------------------------------------------------------------------
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/public/assets/. /home/xonkgvsz/public_html/assets/
+    - /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/public/favicon.ico /home/xonkgvsz/repositories/al-ghifari-haramain/public/robots.txt /home/xonkgvsz/public_html/
+    - if [ -f /home/xonkgvsz/public_html/.htaccess ]; then if ! cmp -s /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/cpanel_public_html/.htaccess /home/xonkgvsz/public_html/.htaccess; then /bin/cp /home/xonkgvsz/public_html/.htaccess /home/xonkgvsz/public_html/.htaccess.bak_$(date +%Y%m%d_%H%M%S) && /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/cpanel_public_html/.htaccess /home/xonkgvsz/public_html/.htaccess; fi; else /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/cpanel_public_html/.htaccess /home/xonkgvsz/public_html/.htaccess; fi
+    - /bin/cp /home/xonkgvsz/repositories/al-ghifari-haramain/deployment/cpanel_public_html/index.php /home/xonkgvsz/public_html/index.php
+    - /bin/cp -R /home/xonkgvsz/repositories/al-ghifari-haramain/public/build/. /home/xonkgvsz/public_html/build/
