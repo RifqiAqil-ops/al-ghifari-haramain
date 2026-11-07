@@ -35,8 +35,16 @@ cleanup() {
     if [ "${MAINTENANCE_ACTIVE}" -eq 1 ] && [ -f "${CORE_PATH}/artisan" ]; then
         echo "" >&2
         echo "-> [MAINTENANCE CLEANUP] Memulihkan aplikasi dari maintenance mode..." >&2
-        php "${CORE_PATH}/artisan" up || true
-        MAINTENANCE_ACTIVE=0
+        if php "${CORE_PATH}/artisan" up; then
+            MAINTENANCE_ACTIVE=0
+            echo "-> [MAINTENANCE CLEANUP] Aplikasi berhasil dipulihkan dari maintenance mode." >&2
+        else
+            echo "=============================================================================" >&2
+            echo "FATAL WARNING: [MAINTENANCE CLEANUP] Gagal memulihkan aplikasi dari maintenance mode!" >&2
+            echo "Aplikasi MASIH DALAM MAINTENANCE MODE (503) akibat kegagalan 'artisan up'." >&2
+            echo "Harap segera periksa dan jalankan secara manual: php ${CORE_PATH}/artisan up" >&2
+            echo "=============================================================================" >&2
+        fi
     fi
 
     # 2. Hapus berkas konfigurasi dan inventarisasi sementara
@@ -210,13 +218,19 @@ echo "-> Seluruh ${LIVE_TABLE_COUNT} tabel menggunakan storage engine InnoDB (10
 # 5. MAINTENANCE WINDOW UNTUK KONSISTENSI SNAPSHOT DAN METADATA
 # -----------------------------------------------------------------------------
 echo "-> Mengaktifkan Maintenance Window Laravel (Zero Write Window)..."
-if [ -f "${CORE_PATH}/artisan" ]; then
-    php "${CORE_PATH}/artisan" down --render="errors::503" || true
-    MAINTENANCE_ACTIVE=1
-    echo "-> Maintenance Window AKTIF (Traffic web diisolasi)."
-else
-    echo "PERINGATAN: artisan tidak ditemukan. Berjalan tanpa maintenance window."
+if [ ! -f "${CORE_PATH}/artisan" ]; then
+    echo "FATAL ERROR: File artisan tidak ditemukan pada ${CORE_PATH}! Tidak dapat mengisolasi transaksi web." >&2
+    exit 1
 fi
+
+if ! php "${CORE_PATH}/artisan" down --render="errors::503"; then
+    echo "FATAL ERROR: Perintah 'php artisan down' GAGAL dieksekusi!" >&2
+    echo "Backup dibatalkan demi keamanan karena transaksi web tidak dapat diisolasi." >&2
+    exit 1
+fi
+
+MAINTENANCE_ACTIVE=1
+echo "-> Maintenance Window AKTIF (Traffic web diisolasi)."
 
 # -----------------------------------------------------------------------------
 # 6. GENERASI METADATA JUMLAH RECORD SETIAP TABEL
@@ -273,8 +287,16 @@ rm -f "$TMP_CNF"
 # Setelah mysqldump tuntas, nonaktifkan maintenance window secepatnya
 if [ "${MAINTENANCE_ACTIVE}" -eq 1 ] && [ -f "${CORE_PATH}/artisan" ]; then
     echo "-> Menonaktifkan Maintenance Window Laravel (aplikasi live kembali)..."
-    php "${CORE_PATH}/artisan" up || true
-    MAINTENANCE_ACTIVE=0
+    if php "${CORE_PATH}/artisan" up; then
+        MAINTENANCE_ACTIVE=0
+        echo "-> Maintenance Window NONAKTIF (Aplikasi telah kembali live)."
+    else
+        echo "=============================================================================" >&2
+        echo "FATAL WARNING: Gagal menjalankan 'php artisan up'!" >&2
+        echo "Aplikasi kemungkinan MASIH DALAM STATUS MAINTENANCE MODE (503)." >&2
+        echo "Harap segera periksa dan jalankan secara manual: php ${CORE_PATH}/artisan up" >&2
+        echo "=============================================================================" >&2
+    fi
 fi
 
 # -----------------------------------------------------------------------------
@@ -354,7 +376,11 @@ echo "Audit Storage Engine     : InnoDB (100% Verified)"
 echo "Audit Statement Data     : VALID (users, company_settings, roles, permissions)"
 echo "Pemeriksaan Akhir Dump   : VALID (${TAIL_MARKER})"
 echo "Status Berkas Backup     : LENGKAP & TERKUNCI (chmod 600)"
-echo "Status Maintenance Window: SUKSES (Zero write window dipulihkan)"
+if [ "${MAINTENANCE_ACTIVE}" -eq 0 ]; then
+    echo "Status Maintenance Window: SUKSES (Zero write window dipulihkan)"
+else
+    echo "Status Maintenance Window: PERINGATAN KRITIS (Gagal dipulihkan otomatis, jalankan 'php artisan up')"
+fi
 echo "Catatan Penting          : Format skema, data, dan metadata tabel terverifikasi."
 echo "                           Untuk pembuktian semantik pemulihan 100%, jalankan uji"
 echo "                           restore menggunakan restore_test_database_hardened.sh."
