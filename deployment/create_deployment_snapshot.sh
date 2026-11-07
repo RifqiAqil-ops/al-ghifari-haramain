@@ -75,14 +75,26 @@ echo " 2. AUDIT SYMLINK PADA DIREKTORI PRODUKSI YANG AKAN DI-SNAPSHOT"
 echo "============================================================================="
 
 UNAUTHORIZED_SYMLINKS=0
+SCAN_FAILURES=0
 check_unauthorized_symlinks() {
     local scan_dir="$1"
     if [ -d "$scan_dir" ]; then
-        while IFS= read -r found_link; do
-            [ -z "$found_link" ] && continue
-            echo "SECURITY WARNING: Symlink terdeteksi di dalam direktori produksi: $found_link -> $(readlink "$found_link" 2>/dev/null || true)"
-            UNAUTHORIZED_SYMLINKS=$((UNAUTHORIZED_SYMLINKS + 1))
-        done < <(find "$scan_dir" -type l 2>/dev/null || true)
+        local found_links
+        local find_status=0
+        found_links=$(find "$scan_dir" -type l 2>&1) || find_status=$?
+        if [ "$find_status" -ne 0 ]; then
+            echo "FATAL ERROR: Gagal memindai symbolic link pada direktori: $scan_dir (exit code: $find_status)!"
+            [ -n "$found_links" ] && echo "Detail error: $found_links"
+            SCAN_FAILURES=$((SCAN_FAILURES + 1))
+            return 1
+        fi
+        if [ -n "$found_links" ]; then
+            while IFS= read -r found_link || [ -n "$found_link" ]; do
+                [ -z "$found_link" ] && continue
+                echo "SECURITY WARNING: Symlink terdeteksi di dalam direktori produksi: $found_link -> $(readlink "$found_link" 2>/dev/null || true)"
+                UNAUTHORIZED_SYMLINKS=$((UNAUTHORIZED_SYMLINKS + 1))
+            done <<< "$found_links"
+        fi
     fi
 }
 
@@ -93,6 +105,11 @@ done
 for d in "assets" "build"; do
     check_unauthorized_symlinks "${PUBLIC_PATH}/${d}"
 done
+
+if [ "$SCAN_FAILURES" -gt 0 ]; then
+    echo "FATAL ERROR: Pemindaian symlink gagal pada $SCAN_FAILURES direktori produksi! Snapshot dibatalkan demi keamanan."
+    exit 1
+fi
 
 if [ "$UNAUTHORIZED_SYMLINKS" -gt 0 ]; then
     echo "FATAL SECURITY ERROR: Ditemukan ${UNAUTHORIZED_SYMLINKS} symbolic link tidak diizinkan di dalam target produksi!"

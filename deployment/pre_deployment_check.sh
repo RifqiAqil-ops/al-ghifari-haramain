@@ -127,14 +127,25 @@ echo ""
 echo "3. MEMERIKSA ANOMALI SYMBOLIC LINK DI DIREKTORI PRODUKSI & REPO..."
 
 UNAUTH_LINKS=0
+SCAN_FAILURES=0
 scan_links() {
     local d="$1"
     if [ -d "$d" ]; then
-        while IFS= read -r l; do
-            [ -z "$l" ] && continue
-            echo " [ANOMALI] Symlink tidak diizinkan ditemukan: $l -> $(readlink "$l" 2>/dev/null || true)"
-            UNAUTH_LINKS=$((UNAUTH_LINKS + 1))
-        done < <(find "$d" -type l 2>/dev/null || true)
+        local found_links
+        local find_status=0
+        found_links=$(find "$d" -type l 2>&1) || find_status=$?
+        if [ "$find_status" -ne 0 ]; then
+            check_status "FAIL" "Gagal memindai symbolic link pada direktori: $d (exit code: $find_status). Detail: $found_links"
+            SCAN_FAILURES=$((SCAN_FAILURES + 1))
+            return 1
+        fi
+        if [ -n "$found_links" ]; then
+            while IFS= read -r l || [ -n "$l" ]; do
+                [ -z "$l" ] && continue
+                echo " [ANOMALI] Symlink tidak diizinkan ditemukan: $l -> $(readlink "$l" 2>/dev/null || true)"
+                UNAUTH_LINKS=$((UNAUTH_LINKS + 1))
+            done <<< "$found_links"
+        fi
     fi
 }
 
@@ -148,10 +159,14 @@ for d in "assets" "build"; do
     scan_links "${REPO_PATH}/public/${d}"
 done
 
-if [ "$UNAUTH_LINKS" -eq 0 ]; then
+if [ "$UNAUTH_LINKS" -eq 0 ] && [ "$SCAN_FAILURES" -eq 0 ]; then
     check_status "PASS" "Zero symlink tidak sah terdeteksi di seluruh direktori yang dikelola"
-else
+elif [ "$UNAUTH_LINKS" -gt 0 ]; then
     check_status "FAIL" "Ditemukan ${UNAUTH_LINKS} symbolic link tidak sah! Berbahaya bagi cp -R dan snapshot."
+fi
+
+if [ "$SCAN_FAILURES" -gt 0 ]; then
+    check_status "FAIL" "Pemindaian symlink gagal pada ${SCAN_FAILURES} direktori! Audit symlink tidak tuntas."
 fi
 
 # -----------------------------------------------------------------------------
@@ -339,7 +354,7 @@ echo " WARN : $TOTAL_WARN"
 echo " FAIL : $TOTAL_FAIL"
 echo "============================================================================="
 
-if [ "$TOTAL_FAIL" -eq 0 ]; then
+if [ "$TOTAL_FAIL" -eq 0 ] && [ "$SCAN_FAILURES" -eq 0 ]; then
     echo -e "\033[32m>> STATUS: LINGKUNGAN AMAN. DEPLOYMENT DAPAT DILANJUTKAN. <<\033[0m"
     exit 0
 else
