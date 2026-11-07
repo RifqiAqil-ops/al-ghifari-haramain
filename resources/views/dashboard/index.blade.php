@@ -181,10 +181,10 @@
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span class="fw-bold text-dark small">{{ $dep->code }}</span>
                         <span class="badge bg-forest-green text-white" style="font-size: 0.65rem;">
-                            {{ $dep->departure_date->translatedFormat('d M Y') }}
+                            {{ $dep->departure_date ? $dep->departure_date->translatedFormat('d M Y') : '-' }}
                         </span>
                     </div>
-                    <div class="small text-muted text-truncate">{{ $dep->package->name }}</div>
+                    <div class="small text-muted text-truncate">{{ $dep->package->name ?? 'Paket tidak tersedia' }}</div>
                     <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
                         <span><i class="bi bi-people me-1"></i>{{ $dep->registrations_count ?? $dep->registrations()->count() }} / {{ $dep->quota }} Pax</span>
                         <span>{{ $dep->airline ?? 'Maskapai' }}</span>
