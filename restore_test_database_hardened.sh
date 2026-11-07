@@ -15,12 +15,25 @@ CORE_PATH="/home/xonkgvsz/al-ghifari-core"
 BACKUP_FILE="${1:-}"
 TARGET_TEST_DB="${2:-xonkgvsz_test_restore}"
 
+TMP_BASE_DIR="/home/xonkgvsz"
+if [ ! -d "$TMP_BASE_DIR" ] || [ ! -w "$TMP_BASE_DIR" ]; then
+    TMP_BASE_DIR="${TMPDIR:-/tmp}"
+fi
+
 TMP_RESTORE_CNF=""
+TMP_RAW_ENTRIES=""
+TMP_MALFORMED=""
 TMP_EXPECTED_TABLES=""
+TMP_DUP_TABLES=""
 TMP_RESTORED_TABLES=""
 
 cleanup() {
-    rm -f "${TMP_RESTORE_CNF:-}" "${TMP_EXPECTED_TABLES:-}" "${TMP_RESTORED_TABLES:-}"
+    rm -f "${TMP_RESTORE_CNF:-}" \
+          "${TMP_RAW_ENTRIES:-}" \
+          "${TMP_MALFORMED:-}" \
+          "${TMP_EXPECTED_TABLES:-}" \
+          "${TMP_DUP_TABLES:-}" \
+          "${TMP_RESTORED_TABLES:-}"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -39,6 +52,11 @@ echo "==========================================================================
 # -----------------------------------------------------------------------------
 if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
     echo "FATAL ERROR: Berkas backup tidak ditentukan atau tidak ditemukan: '${BACKUP_FILE}'!" >&2
+    exit 1
+fi
+
+if [ ! -r "$BACKUP_FILE" ]; then
+    echo "FATAL ERROR: Berkas backup '${BACKUP_FILE}' tidak dapat dibaca (permission denied)!" >&2
     exit 1
 fi
 
@@ -61,12 +79,110 @@ if [ "$TARGET_TEST_DB" != "xonkgvsz_test_restore" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 2. ALOKASI KREDENSIAL VIA MKTEMP & LARAVEL RUNTIME
+# 2. VALIDASI PRE-IMPORT METADATA BACKUP (SEBELUM TINDAKAN DATABASE)
 # -----------------------------------------------------------------------------
-TMP_RESTORE_CNF=$(mktemp /home/xonkgvsz/.my_restore_XXXXXX.cnf)
+echo "-> Memvalidasi berkas metadata sebelum melakukan tindakan database..."
+
+META_FILE="${BACKUP_FILE%.sql}.meta"
+
+# A. Pemeriksaan ketersediaan dan izin baca file .meta
+if [ ! -f "$META_FILE" ]; then
+    echo "=============================================================================" >&2
+    echo "FATAL ERROR: Berkas metadata (${META_FILE}) TIDAK DITEMUKAN!" >&2
+    echo "Restore pengujian dibatalkan sebelum import SQL untuk mencegah import tanpa baseline verifikasi yang sah." >&2
+    echo "STATUS RESTORE: GAGAL (Metadata Tidak Ditemukan)" >&2
+    echo "=============================================================================" >&2
+    exit 1
+fi
+
+if [ ! -r "$META_FILE" ]; then
+    echo "=============================================================================" >&2
+    echo "FATAL ERROR: Berkas metadata (${META_FILE}) TIDAK DAPAT DIBACA (Permission Denied)!" >&2
+    echo "STATUS RESTORE: GAGAL (Metadata Tidak Dapat Dibaca)" >&2
+    echo "=============================================================================" >&2
+    exit 1
+fi
+
+# B. Validasi database asal pada metadata (Wajib persis xonkgvsz_alghifari)
+META_DB_LINES=$(grep -c -E '^database=' "$META_FILE" || true)
+if [ "$META_DB_LINES" -ne 1 ]; then
+    echo "FATAL ERROR: Baris konfigurasi 'database=' tidak valid atau terduplikasi (${META_DB_LINES} baris) dalam metadata!" >&2
+    exit 1
+fi
+META_DB=$(grep -E '^database=' "$META_FILE" | cut -d '=' -f2- | tr -d '\r')
+if [ "$META_DB" != "xonkgvsz_alghifari" ]; then
+    echo "FATAL ERROR: Metadata asal database TIDAK VALID! Diharapkan 'xonkgvsz_alghifari', ditemukan '${META_DB}'." >&2
+    exit 1
+fi
+
+# C. Validasi total_tables (harus bilangan bulat positif)
+META_TOTAL_TABLES_LINES=$(grep -c -E '^total_tables=' "$META_FILE" || true)
+if [ "$META_TOTAL_TABLES_LINES" -ne 1 ]; then
+    echo "FATAL ERROR: Baris konfigurasi 'total_tables=' tidak valid atau terduplikasi (${META_TOTAL_TABLES_LINES} baris) dalam metadata!" >&2
+    exit 1
+fi
+META_TOTAL_TABLES=$(grep -E '^total_tables=' "$META_FILE" | cut -d '=' -f2- | tr -d '\r')
+if ! [[ "$META_TOTAL_TABLES" =~ ^[1-9][0-9]*$ ]]; then
+    echo "FATAL ERROR: Nilai total_tables ('${META_TOTAL_TABLES}') dalam metadata bukan bilangan bulat positif!" >&2
+    exit 1
+fi
+
+# D. Validasi bagian [record_counts] dan pemeriksaan entri malformed
+if ! grep -q -Fx '[record_counts]' "$META_FILE"; then
+    echo "FATAL ERROR: Bagian '[record_counts]' tidak ditemukan dalam berkas metadata!" >&2
+    exit 1
+fi
+
+TMP_RAW_ENTRIES=$(mktemp "${TMP_BASE_DIR}/.meta_raw_XXXXXX.txt")
+awk '/^\[record_counts\]$/ {found=1; next} found && !/^[[:space:]]*(#|$)/ {gsub(/\r$/, ""); print}' "$META_FILE" > "$TMP_RAW_ENTRIES"
+
+TMP_MALFORMED=$(mktemp "${TMP_BASE_DIR}/.meta_malformed_XXXXXX.txt")
+grep -v -E '^[a-zA-Z0-9_]+=[0-9]+$' "$TMP_RAW_ENTRIES" > "$TMP_MALFORMED" || true
+
+if [ -s "$TMP_MALFORMED" ]; then
+    echo "=============================================================================" >&2
+    echo "FATAL ERROR: Ditemukan baris/entri MALFORMED pada bagian [record_counts] dalam metadata:" >&2
+    sed 's/^/  - /' "$TMP_MALFORMED" >&2
+    echo "STATUS RESTORE: GAGAL (Entri Metadata Malformed)" >&2
+    echo "=============================================================================" >&2
+    exit 1
+fi
+
+# E. Ekstraksi daftar tabel dan validasi duplikasi tabel
+TMP_EXPECTED_TABLES=$(mktemp "${TMP_BASE_DIR}/.exp_tbl_XXXXXX.txt")
+cut -d '=' -f1 < "$TMP_RAW_ENTRIES" | sort > "$TMP_EXPECTED_TABLES"
+
+TMP_DUP_TABLES=$(mktemp "${TMP_BASE_DIR}/.dup_tbl_XXXXXX.txt")
+cut -d '=' -f1 < "$TMP_RAW_ENTRIES" | sort | uniq -d > "$TMP_DUP_TABLES"
+if [ -s "$TMP_DUP_TABLES" ]; then
+    echo "=============================================================================" >&2
+    echo "FATAL ERROR: Ditemukan nama tabel DUPLIKAT dalam berkas metadata:" >&2
+    sed 's/^/  - /' "$TMP_DUP_TABLES" >&2
+    echo "STATUS RESTORE: GAGAL (Tabel Metadata Duplikat)" >&2
+    echo "=============================================================================" >&2
+    exit 1
+fi
+
+# F. Validasi kecocokan jumlah entri tabel dengan nilai total_tables
+EXPECTED_TABLE_COUNT=$(wc -l < "$TMP_EXPECTED_TABLES" | tr -d ' ')
+if [ "$EXPECTED_TABLE_COUNT" -ne "$META_TOTAL_TABLES" ]; then
+    echo "=============================================================================" >&2
+    echo "FATAL ERROR: Jumlah entri tabel (${EXPECTED_TABLE_COUNT}) tidak cocok dengan nilai total_tables (${META_TOTAL_TABLES}) pada metadata!" >&2
+    echo "STATUS RESTORE: GAGAL (Jumlah Tabel Metadata Tidak Cocok)" >&2
+    echo "=============================================================================" >&2
+    exit 1
+fi
+
+echo "-> Metadata terverifikasi valid:"
+echo "   - Database Asal  : ${META_DB}"
+echo "   - Total Tabel    : ${EXPECTED_TABLE_COUNT} tabel (konsisten, unik, tidak ada entri malformed)"
+
+# -----------------------------------------------------------------------------
+# 3. ALOKASI KREDENSIAL VIA MKTEMP & LARAVEL RUNTIME
+# -----------------------------------------------------------------------------
+TMP_RESTORE_CNF=$(mktemp "${TMP_BASE_DIR}/.my_restore_XXXXXX.cnf")
 chmod 600 "$TMP_RESTORE_CNF"
-TMP_EXPECTED_TABLES=$(mktemp /home/xonkgvsz/.exp_tbl_XXXXXX.txt)
-TMP_RESTORED_TABLES=$(mktemp /home/xonkgvsz/.res_tbl_XXXXXX.txt)
+TMP_RESTORED_TABLES=$(mktemp "${TMP_BASE_DIR}/.res_tbl_XXXXXX.txt")
 
 php -r '
 require "'"${CORE_PATH}"'/vendor/autoload.php";
@@ -87,7 +203,7 @@ file_put_contents($cnfFile, $cnfContent);
 ' "$TMP_RESTORE_CNF"
 
 # -----------------------------------------------------------------------------
-# 3. VERIFIKASI KEBERADAAN & HAK AKSES DATABASE PENGUJIAN
+# 4. VERIFIKASI KEBERADAAN & HAK AKSES DATABASE PENGUJIAN
 # -----------------------------------------------------------------------------
 echo "-> Memeriksa keberadaan database pengujian [${TARGET_TEST_DB}]..."
 DB_EXISTS=$(mysql --defaults-extra-file="$TMP_RESTORE_CNF" \
@@ -113,7 +229,7 @@ fi
 echo "-> Hak akses user terverifikasi valid."
 
 # -----------------------------------------------------------------------------
-# 4. PRASYARAT KOSONG: PASTIKAN DATABASE PENGUJIAN BENAR-BENAR KOSONG
+# 5. PRASYARAT KOSONG: PASTIKAN DATABASE PENGUJIAN BENAR-BENAR KOSONG
 # -----------------------------------------------------------------------------
 echo "-> Memeriksa apakah database pengujian [${TARGET_TEST_DB}] benar-benar kosong..."
 EXISTING_TABLES_COUNT=$(mysql --defaults-extra-file="$TMP_RESTORE_CNF" \
@@ -130,7 +246,7 @@ fi
 echo "-> Database pengujian terverifikasi 100% kosong (0 tabel)."
 
 # -----------------------------------------------------------------------------
-# 5. EKSEKUSI RESTORE KE DATABASE PENGUJIAN
+# 6. EKSEKUSI RESTORE KE DATABASE PENGUJIAN
 # -----------------------------------------------------------------------------
 echo "-> Menjalankan import file SQL ke database pengujian [${TARGET_TEST_DB}]..."
 set +e
@@ -148,7 +264,7 @@ if [ "$RESTORE_STATUS" -ne 0 ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# 6. REKONSILIASI KELENGKAPAN TABEL & JUMLAH RECORD
+# 7. REKONSILIASI KELENGKAPAN TABEL & JUMLAH RECORD PASCA-IMPORT
 # -----------------------------------------------------------------------------
 echo "-> Melakukan rekonsiliasi daftar tabel dan jumlah record..."
 
@@ -160,23 +276,7 @@ mysql --defaults-extra-file="$TMP_RESTORE_CNF" \
       | sort > "$TMP_RESTORED_TABLES"
 RESTORED_TABLE_COUNT=$(wc -l < "$TMP_RESTORED_TABLES" | tr -d ' ')
 
-# B. Periksa ketersediaan berkas metadata pendamping (.meta)
-META_FILE="${BACKUP_FILE%.sql}.meta"
-if [ ! -f "$META_FILE" ]; then
-    echo "=============================================================================" >&2
-    echo "FATAL ERROR: Berkas metadata (${META_FILE}) TIDAK DITEMUKAN!" >&2
-    echo "Tidak dapat melakukan rekonsiliasi tabel dan record secara objektif." >&2
-    echo "Skrip TIDAK AKAN mengklaim restore sukses tanpa baseline metadata yang sah." >&2
-    echo "STATUS RESTORE: GAGAL (Metadata Tidak Lengkap / Hilang)" >&2
-    echo "=============================================================================" >&2
-    exit 1
-fi
-
-# C. Ekstraksi daftar tabel dari metadata
-grep -E '^[a-zA-Z0-9_]+=[0-9]+' "$META_FILE" | cut -d '=' -f1 | sort > "$TMP_EXPECTED_TABLES"
-EXPECTED_TABLE_COUNT=$(wc -l < "$TMP_EXPECTED_TABLES" | tr -d ' ')
-
-# D. Identifikasi tabel hilang dan tabel ekstra
+# B. Identifikasi tabel hilang dan tabel ekstra terhadap baseline metadata
 MISSING_TABLES=$(comm -23 "$TMP_EXPECTED_TABLES" "$TMP_RESTORED_TABLES" || true)
 EXTRA_TABLES=$(comm -13 "$TMP_EXPECTED_TABLES" "$TMP_RESTORED_TABLES" || true)
 
@@ -206,7 +306,7 @@ if [ "$TABLE_ERROR" -eq 1 ]; then
     exit 1
 fi
 
-# E. Rekonsiliasi jumlah record setiap tabel
+# C. Rekonsiliasi jumlah record setiap tabel secara 1:1
 RECORD_MISMATCHES=0
 
 echo ""
@@ -216,7 +316,7 @@ echo "--------------------------------------------------------------------------
 
 while IFS= read -r tbl || [ -n "$tbl" ]; do
     [ -z "$tbl" ] && continue
-    EXPECTED_COUNT=$(grep -E "^${tbl}=" "$META_FILE" | head -n1 | cut -d '=' -f2)
+    EXPECTED_COUNT=$(grep -E "^${tbl}=" "$TMP_RAW_ENTRIES" | head -n1 | cut -d '=' -f2)
     RESTORE_COUNT=$(mysql --defaults-extra-file="$TMP_RESTORE_CNF" \
                           --skip-column-names \
                           --batch \
