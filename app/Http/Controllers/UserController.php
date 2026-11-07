@@ -7,6 +7,7 @@ use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -39,6 +40,71 @@ class UserController extends Controller
         $roles = Role::all();
 
         return view('users.index', compact('users', 'roles', 'search', 'role'));
+    }
+
+    public function createAdmin(): View
+    {
+        return view('users.create-admin');
+    }
+
+    public function storeAdmin(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'name.max' => 'Nama lengkap maksimal 255 karakter.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.max' => 'Alamat email maksimal 255 karakter.',
+            'email.unique' => 'Alamat email ini sudah terdaftar dalam sistem.',
+            'password.required' => 'Kata sandi wajib diisi.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password.min' => 'Kata sandi minimal 8 karakter.',
+        ]);
+
+        try {
+            $user = DB::transaction(function () use ($validated) {
+                // 1. Verifikasi keberadaan role Admin pada sistem role yang sudah ada
+                $adminRole = Role::where('name', 'Admin')->where('guard_name', 'web')->first()
+                    ?? Role::whereRaw('LOWER(name) = ?', ['admin'])->first();
+
+                if (!$adminRole) {
+                    throw new \RuntimeException('Role Admin tidak ditemukan dalam konfigurasi sistem.');
+                }
+
+                // 2. Buat user baru dengan password terenkripsi dan status aktif
+                $user = User::create([
+                    'name' => $validated['name'],
+                    'email' => $validated['email'],
+                    'password' => Hash::make($validated['password']),
+                    'is_active' => true,
+                    'email_verified_at' => now(),
+                ]);
+
+                // 3. Tetapkan role Admin (jika gagal, DB transaction otomatis me-rollback pembuatan user)
+                $user->assignRole($adminRole);
+
+                return $user;
+            });
+        } catch (\Throwable $e) {
+            report($e);
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->with('toast_danger', 'Gagal membuat akun Admin. Silakan coba kembali atau hubungi administrator.');
+        }
+
+        // 4. Catat aktivitas audit secara aman tanpa mengekspos password
+        try {
+            ActivityLogger::log('CREATE_ADMIN', 'User', "Membuat akun Admin baru: {$user->name} ({$user->email})");
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()->route('users.index')
+            ->with('toast_success', "Akun Admin baru ({$user->name}) berhasil dibuat dan dapat langsung digunakan untuk masuk.");
     }
 
     public function create(): View

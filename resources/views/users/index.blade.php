@@ -5,12 +5,15 @@
 @section('content')
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
-        <h4 class="fw-bold mb-1 text-dark">Manajemen Pengguna & Akses Staf</h4>
+        <h4 class="fw-bold mb-1 text-dark">Manajemen Pengguna</h4>
         <p class="text-muted small mb-0">Kelola akun internal travel, penetapan peran (role), dan status aktif pengguna</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('users.roles') }}" class="btn btn-outline-secondary">
             <i class="bi bi-shield-lock me-1"></i> Hak Akses & Role Matrix
+        </a>
+        <a href="{{ route('users.create-admin') }}" class="btn btn-forest-green">
+            <i class="bi bi-person-plus-fill me-1"></i> Tambah Admin
         </a>
         <a href="{{ route('users.create') }}" class="btn btn-primary">
             <i class="bi bi-person-plus me-1"></i> Tambah Pengguna Baru
@@ -106,7 +109,7 @@
                                         <form action="{{ route('users.toggle-status', $u) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="btn btn-sm {{ $u->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" 
+                                            <button type="submit" class="btn btn-sm {{ $u->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}"
                                                 title="{{ $u->is_active ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}">
                                                 <i class="bi {{ $u->is_active ? 'bi-lock' : 'bi-unlock' }}"></i>
                                             </button>

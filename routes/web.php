@@ -211,6 +211,12 @@ Route::middleware('auth')->group(function () {
         Route::put('/roles/{role}/permissions', [UserController::class, 'updateRolePermissions'])->name('roles.update')->whereNumber('role');
     });
 
+    // Fitur Create New Admin Account (Hanya Admin & Super Admin)
+    Route::middleware('role:Admin|Super Admin')->group(function () {
+        Route::get('/users/create-admin', [UserController::class, 'createAdmin'])->name('users.create-admin');
+        Route::post('/users/create-admin', [UserController::class, 'storeAdmin'])->name('users.store-admin');
+    });
+
     Route::middleware('permission:user.create')->group(function () {
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
         Route::post('/users', [UserController::class, 'store'])->name('users.store');
