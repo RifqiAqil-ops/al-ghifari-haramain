@@ -239,7 +239,7 @@
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
                                     <span class="badge bg-forest-green text-royal-gold font-monospace me-1">{{ $reg->registration_number }}</span>
-                                    <h6 class="fw-bold text-dark mb-0 mt-1">{{ $reg->package->name }}</h6>
+                                    <h6 class="fw-bold text-dark mb-0 mt-1">{{ $reg->package?->name ?? 'Paket tidak tersedia' }}</h6>
                                 </div>
                                 <span class="badge {{ $reg->status === 'siap_berangkat' ? 'badge-subtle-success' : 'badge-subtle-info' }} px-2 py-1">
                                     {{ $reg->status_label }}
@@ -247,7 +247,7 @@
                             </div>
                             <div class="row g-2 text-muted small mb-2">
                                 <div class="col-sm-6">
-                                    <i class="bi bi-calendar-event me-1 text-royal-gold"></i> Berangkat: <strong>{{ $reg->departure->departure_date->translatedFormat('d M Y') }}</strong>
+                                    <i class="bi bi-calendar-event me-1 text-royal-gold"></i> Berangkat: <strong>{{ $reg->departure?->departure_date?->translatedFormat('d M Y') ?? '-' }}</strong>
                                 </div>
                                 <div class="col-sm-6">
                                     <i class="bi bi-door-closed me-1 text-royal-gold"></i> Tipe Kamar: <strong>{{ $reg->room_type_label }}</strong>
@@ -256,7 +256,7 @@
                                     <i class="bi bi-tag me-1 text-royal-gold"></i> Biaya Paket: <strong>Rp {{ number_format($reg->final_price, 0, ',', '.') }}</strong>
                                 </div>
                                 <div class="col-sm-6">
-                                    <i class="bi bi-cash-stack me-1 text-royal-gold"></i> Terbayar: <strong class="text-success">Rp {{ number_format($reg->invoice->paid_amount ?? 0, 0, ',', '.') }}</strong>
+                                    <i class="bi bi-cash-stack me-1 text-royal-gold"></i> Terbayar: <strong class="text-success">Rp {{ number_format($reg->invoice?->paid_amount ?? 0, 0, ',', '.') }}</strong>
                                 </div>
                             </div>
 
@@ -264,14 +264,16 @@
                                 <div class="p-2 rounded bg-light d-flex justify-content-between align-items-center">
                                     <span class="small">
                                         Status Tagihan: 
-                                        <strong class="{{ $reg->invoice->status === 'lunas' ? 'text-success' : 'text-danger' }}">
-                                            {{ $reg->invoice->status_label }}
+                                        <strong class="{{ $reg->invoice?->status === 'lunas' ? 'text-success' : 'text-danger' }}">
+                                            {{ $reg->invoice?->status_label }}
                                         </strong>
-                                        (Sisa: Rp {{ number_format($reg->invoice->remaining_amount, 0, ',', '.') }})
+                                        (Sisa: Rp {{ number_format($reg->invoice?->remaining_amount ?? 0, 0, ',', '.') }})
                                     </span>
-                                    <a href="{{ route('finance.invoices.show', $reg->invoice) }}" class="btn btn-xs btn-outline-secondary px-3 py-1">
-                                        Rincian Tagihan &rarr;
-                                    </a>
+                                    @if($reg->invoice)
+                                        <a href="{{ route('finance.invoices.show', $reg->invoice) }}" class="btn btn-xs btn-outline-secondary px-3 py-1">
+                                            Rincian Tagihan &rarr;
+                                        </a>
+                                    @endif
                                 </div>
                             @endif
                         </div>

@@ -66,20 +66,28 @@
                             {{ $reg->registration_number }}
                         </td>
                         <td>
-                            <a href="{{ route('jamaah.show', $reg->jamaah_id) }}" class="fw-bold text-dark text-decoration-none">
-                                {{ $reg->jamaah->name ?? 'Jamaah' }}
-                            </a>
-                            <small class="text-muted d-block" style="font-size: 0.72rem;">NIK: {{ $reg->jamaah->nik ?? '-' }}</small>
+                            @if($reg->jamaah_id)
+                                <a href="{{ route('jamaah.show', $reg->jamaah_id) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ $reg->jamaah?->name ?? 'Jamaah' }}
+                                </a>
+                            @else
+                                <span class="fw-bold text-dark">{{ $reg->jamaah?->name ?? 'Jamaah' }}</span>
+                            @endif
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">NIK: {{ $reg->jamaah?->nik ?? '-' }}</small>
                         </td>
                         <td>
-                            <span class="fw-semibold text-dark small d-block">{{ $reg->package->name ?? '-' }}</span>
+                            <span class="fw-semibold text-dark small d-block">{{ $reg->package?->name ?? 'Paket tidak tersedia' }}</span>
                             <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">
-                                {{ ucfirst($reg->package->type ?? '') }}
+                                {{ $reg->package?->type ? ucfirst($reg->package?->type) : '-' }}
                             </span>
                         </td>
                         <td class="small">
-                            <div><i class="bi bi-calendar-check me-1 text-royal-gold"></i>{{ $reg->departure->departure_date ? $reg->departure->departure_date->translatedFormat('d M Y') : '-' }}</div>
-                            <small class="text-muted">{{ $reg->departure->code ?? '' }} ({{ $reg->departure->airline ?? '' }})</small>
+                            <div><i class="bi bi-calendar-check me-1 text-royal-gold"></i>{{ $reg->departure?->departure_date?->translatedFormat('d M Y') ?? '-' }}</div>
+                            @if($reg->departure)
+                                <small class="text-muted">{{ $reg->departure?->code ?? '' }} ({{ $reg->departure?->airline ?? 'Maskapai' }})</small>
+                            @else
+                                <small class="text-muted fst-italic">Belum dijadwalkan</small>
+                            @endif
                         </td>
                         <td class="small">
                             {{ $reg->room_type_label }}
@@ -91,11 +99,11 @@
                             @if($reg->invoice)
                                 <a href="{{ route('finance.invoices.show', $reg->invoice) }}" class="text-decoration-none">
                                     <span class="badge {{ $reg->invoice->status === 'lunas' ? 'badge-subtle-success' : 'badge-subtle-danger' }}">
-                                        {{ $reg->invoice->status_label }}
+                                        {{ $reg->invoice?->status_label }}
                                     </span>
                                 </a>
                                 <small class="text-muted d-block" style="font-size: 0.72rem;">
-                                    Sisa: Rp {{ number_format($reg->invoice->remaining_amount, 0, ',', '.') }}
+                                    Sisa: Rp {{ number_format($reg->invoice?->remaining_amount ?? 0, 0, ',', '.') }}
                                 </small>
                             @else
                                 <span class="text-muted">-</span>
@@ -139,7 +147,7 @@
                                                 </div>
                                                 <div class="modal-body">
                                                     <p class="small text-muted mb-3">
-                                                        Pendaftaran untuk jamaah <strong>{{ $reg->jamaah->name }}</strong> akan dibatalkan dan status invoice akan disesuaikan.
+                                                        Pendaftaran untuk jamaah <strong>{{ $reg->jamaah?->name ?? 'Jamaah' }}</strong> akan dibatalkan dan status invoice akan disesuaikan.
                                                     </p>
                                                     <label for="reason{{ $reg->id }}" class="form-label small fw-semibold">Alasan Pembatalan <span class="text-danger">*</span></label>
                                                     <textarea name="cancellation_reason" id="reason{{ $reg->id }}" rows="3" class="form-control form-control-sm" placeholder="Contoh: Pengunduran diri karena kondisi kesehatan, mutasi tugas" required></textarea>

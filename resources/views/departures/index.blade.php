@@ -79,23 +79,23 @@
                             {{ $dep->code }}
                         </td>
                         <td>
-                            <strong class="text-dark small d-block">{{ $dep->package->name }}</strong>
+                            <strong class="text-dark small d-block">{{ $dep->package?->name ?? 'Paket tidak tersedia' }}</strong>
                             <span class="badge bg-light text-muted border" style="font-size: 0.65rem;">
-                                {{ ucfirst($dep->package->type) }}
+                                {{ $dep->package?->type ? ucfirst($dep->package?->type) : '-' }}
                             </span>
                         </td>
                         <td class="small">
-                            <div><i class="bi bi-calendar-check text-royal-gold me-1"></i><strong>{{ $dep->departure_date->translatedFormat('d M Y') }}</strong></div>
-                            <small class="text-muted"><i class="bi bi-calendar-x text-muted me-1"></i>s/d {{ $dep->return_date->translatedFormat('d M Y') }}</small>
+                            <div><i class="bi bi-calendar-check text-royal-gold me-1"></i><strong>{{ $dep->departure_date?->translatedFormat('d M Y') ?? '-' }}</strong></div>
+                            <small class="text-muted"><i class="bi bi-calendar-x text-muted me-1"></i>s/d {{ $dep->return_date?->translatedFormat('d M Y') ?? '-' }}</small>
                         </td>
                         <td class="small">
-                            <div class="fw-semibold text-dark">{{ $dep->airline }} ({{ $dep->flight_number ?? 'Charter' }})</div>
+                            <div class="fw-semibold text-dark">{{ $dep->airline ?? 'Maskapai' }} ({{ $dep->flight_number ?? 'Charter' }})</div>
                             <small class="text-muted">{{ $dep->origin_airport ?? 'CGK' }} &rarr; {{ $dep->destination_airport ?? 'MED' }}</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-light text-dark border fw-bold">
-                                    {{ $dep->registrations_count }} / {{ $dep->quota }} Pax
+                                    {{ $dep->registrations_count ?? 0 }} / {{ $dep->quota }} Pax
                                 </span>
                             </div>
                         </td>

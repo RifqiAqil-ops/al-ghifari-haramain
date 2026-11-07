@@ -137,15 +137,15 @@
                         <div class="p-3 mb-2 rounded bg-light border d-flex flex-wrap justify-content-between align-items-center gap-2">
                             <div>
                                 <span class="badge bg-forest-green text-royal-gold font-monospace me-1">{{ $dep->code }}</span>
-                                <strong class="text-dark">{{ $dep->departure_date->translatedFormat('d F Y') }}</strong>
-                                <span class="text-muted small">&bull; Kepulangan: {{ $dep->return_date->translatedFormat('d F Y') }}</span>
+                                <strong class="text-dark">{{ $dep->departure_date?->translatedFormat('d F Y') ?? '-' }}</strong>
+                                <span class="text-muted small">&bull; Kepulangan: {{ $dep->return_date?->translatedFormat('d F Y') ?? '-' }}</span>
                                 <div class="small text-muted mt-1">
-                                    <i class="bi bi-airplane me-1"></i>{{ $dep->airline }} ({{ $dep->flight_number ?? 'Direct' }}) &bull; Tour Leader: {{ $dep->leader_name ?? '-' }}
+                                    <i class="bi bi-airplane me-1"></i>{{ $dep->airline ?? 'Maskapai' }} ({{ $dep->flight_number ?? 'Direct' }}) &bull; Tour Leader: {{ $dep->leader_name ?? '-' }}
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-white text-dark border px-2 py-1">
-                                    {{ $dep->registrations_count }} / {{ $dep->quota }} Pax
+                                    {{ $dep->registrations_count ?? 0 }} / {{ $dep->quota }} Pax
                                 </span>
                                 <a href="{{ route('departures.show', $dep) }}" class="btn btn-sm btn-outline-secondary">
                                     Manifest &rarr;
@@ -180,18 +180,22 @@
                                             {{ $reg->registration_number }}
                                         </td>
                                         <td>
-                                            <a href="{{ route('jamaah.show', $reg->jamaah_id) }}" class="fw-bold text-dark text-decoration-none">
-                                                {{ $reg->jamaah->name ?? '-' }}
-                                            </a>
+                                            @if($reg->jamaah_id)
+                                                <a href="{{ route('jamaah.show', $reg->jamaah_id) }}" class="fw-bold text-dark text-decoration-none">
+                                                    {{ $reg->jamaah?->name ?? '-' }}
+                                                </a>
+                                            @else
+                                                <span class="fw-bold text-dark">{{ $reg->jamaah?->name ?? '-' }}</span>
+                                            @endif
                                         </td>
                                         <td class="small">
-                                            {{ $reg->departure->departure_date ? $reg->departure->departure_date->translatedFormat('d M Y') : '-' }}
+                                            {{ $reg->departure?->departure_date?->translatedFormat('d M Y') ?? '-' }}
                                         </td>
                                         <td class="small">{{ $reg->room_type_label }}</td>
                                         <td>
                                             @if($reg->invoice)
-                                                <span class="badge {{ $reg->invoice->status === 'lunas' ? 'badge-subtle-success' : 'badge-subtle-danger' }}">
-                                                    {{ $reg->invoice->status_label }}
+                                                <span class="badge {{ $reg->invoice?->status === 'lunas' ? 'badge-subtle-success' : 'badge-subtle-danger' }}">
+                                                    {{ $reg->invoice?->status_label }}
                                                 </span>
                                             @endif
                                         </td>

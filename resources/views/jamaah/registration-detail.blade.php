@@ -10,7 +10,7 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4">
                 <div>
                     <span class="badge bg-forest-green text-royal-gold font-monospace mb-1">{{ $registration->registration_number }}</span>
-                    <h5 class="fw-bold text-dark mb-0">{{ $registration->package->name }}</h5>
+                    <h5 class="fw-bold text-dark mb-0">{{ $registration->package?->name ?? 'Paket tidak tersedia' }}</h5>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge {{ $registration->status === 'siap_berangkat' ? 'badge-subtle-success' : 'badge-subtle-info' }} px-3 py-2">
@@ -28,23 +28,23 @@
                     <table class="table table-sm table-borderless small mb-0">
                         <tr>
                             <td class="text-muted" style="width: 140px;">Nama Lengkap</td>
-                            <td>: <strong>{{ $registration->jamaah->name }}</strong></td>
+                            <td>: <strong>{{ $registration->jamaah?->name ?? '-' }}</strong></td>
                         </tr>
                         <tr>
                             <td class="text-muted">NIK</td>
-                            <td>: {{ $registration->jamaah->nik }}</td>
+                            <td>: {{ $registration->jamaah?->nik ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Nomor Paspor</td>
-                            <td>: {{ $registration->jamaah->passport_number ?? '-' }}</td>
+                            <td>: {{ $registration->jamaah?->passport_number ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td class="text-muted">WhatsApp</td>
-                            <td>: <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $registration->jamaah->phone) }}" target="_blank" class="text-success text-decoration-none fw-semibold">{{ $registration->jamaah->phone }}</a></td>
+                            <td>: @if($registration->jamaah?->phone)<a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $registration->jamaah?->phone) }}" target="_blank" class="text-success text-decoration-none fw-semibold">{{ $registration->jamaah?->phone }}</a>@else - @endif</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Alamat</td>
-                            <td>: {{ $registration->jamaah->address ?? '-' }}, {{ $registration->jamaah->city ?? '' }}</td>
+                            <td>: {{ $registration->jamaah?->address ?? '-' }}{{ $registration->jamaah?->city ? ', ' . $registration->jamaah?->city : '' }}</td>
                         </tr>
                     </table>
                 </div>
@@ -54,15 +54,15 @@
                     <table class="table table-sm table-borderless small mb-0">
                         <tr>
                             <td class="text-muted" style="width: 140px;">Program</td>
-                            <td>: {{ ucfirst($registration->package->type) }} ({{ $registration->package->program_category ?? 'Reguler' }})</td>
+                            <td>: {{ $registration->package?->type ? ucfirst($registration->package?->type) : '-' }} ({{ $registration->package?->program_category ?? 'Reguler' }})</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Keberangkatan</td>
-                            <td>: <strong>{{ $registration->departure->departure_date->translatedFormat('d F Y') }}</strong></td>
+                            <td>: <strong>{{ $registration->departure?->departure_date?->translatedFormat('d F Y') ?? '-' }}</strong></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Maskapai</td>
-                            <td>: {{ $registration->departure->airline }} ({{ $registration->departure->flight_number ?? '-' }})</td>
+                            <td>: {{ $registration->departure?->airline ?? '-' }} ({{ $registration->departure?->flight_number ?? '-' }})</td>
                         </tr>
                         <tr>
                             <td class="text-muted">Tipe Kamar</td>
@@ -70,7 +70,7 @@
                         </tr>
                         <tr>
                             <td class="text-muted">Tour Leader</td>
-                            <td>: {{ $registration->departure->leader_name ?? '-' }} ({{ $registration->departure->leader_phone ?? '-' }})</td>
+                            <td>: {{ $registration->departure?->leader_name ?? '-' }} ({{ $registration->departure?->leader_phone ?? '-' }})</td>
                         </tr>
                     </table>
                 </div>
@@ -94,7 +94,7 @@
                     <div class="col-sm-3 text-sm-end">
                         @if($registration->invoice)
                             <a href="{{ route('finance.invoices.show', $registration->invoice) }}" class="btn btn-sm btn-forest-green">
-                                <i class="bi bi-receipt me-1"></i> Buka Invoice #{{ $registration->invoice->invoice_number }}
+                                <i class="bi bi-receipt me-1"></i> Buka Invoice #{{ $registration->invoice?->invoice_number }}
                             </a>
                         @endif
                     </div>
