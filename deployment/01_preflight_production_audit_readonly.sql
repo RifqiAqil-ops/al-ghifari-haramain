@@ -56,7 +56,7 @@ FROM (
         UNION ALL SELECT 'staff@alghifari.com', 'Staff'
         UNION ALL SELECT 'finance@alghifari.com', 'Finance'
         UNION ALL SELECT 'manager@alghifari.com', 'Manager'
-        UNION ALL SELECT 'rifqiaqi1822@gmail.com', 'Owner'
+        UNION ALL SELECT 'rifqiaqil822@gmail.com', 'Owner'
     ) AS exp
     JOIN `users` u ON u.`email` = exp.expected_email
     JOIN `model_has_roles` mhr ON mhr.`model_id` = u.`id` AND mhr.`model_type` = 'App\\Models\\User'
@@ -173,7 +173,7 @@ FROM (
     UNION ALL SELECT 'staff@alghifari.com', 'Staff'
     UNION ALL SELECT 'finance@alghifari.com', 'Finance'
     UNION ALL SELECT 'manager@alghifari.com', 'Manager'
-    UNION ALL SELECT 'rifqiaqi1822@gmail.com', 'Owner'
+    UNION ALL SELECT 'rifqiaqil822@gmail.com', 'Owner'
 ) AS exp
 LEFT JOIN `users` u ON u.`email` = exp.expected_email
 LEFT JOIN `model_has_roles` mhr ON mhr.`model_id` = u.`id` AND mhr.`model_type` = 'App\\Models\\User'
@@ -185,7 +185,7 @@ ORDER BY FIELD(exp.`expected_email`,
     'staff@alghifari.com', 
     'finance@alghifari.com', 
     'manager@alghifari.com', 
-    'rifqiaqi1822@gmail.com'
+    'rifqiaqil822@gmail.com'
 );
 
 -- -----------------------------------------------------------------------------
@@ -203,7 +203,7 @@ SELECT
         WHEN u.`email` = 'staff@alghifari.com'      AND GROUP_CONCAT(r.`name`) = 'Staff'       THEN 'RESMI VALID (Staff)'
         WHEN u.`email` = 'finance@alghifari.com'    AND GROUP_CONCAT(r.`name`) = 'Finance'     THEN 'RESMI VALID (Finance)'
         WHEN u.`email` = 'manager@alghifari.com'    AND GROUP_CONCAT(r.`name`) = 'Manager'     THEN 'RESMI VALID (Manager)'
-        WHEN u.`email` = 'rifqiaqi1822@gmail.com'   AND GROUP_CONCAT(r.`name`) = 'Owner'       THEN 'RESMI VALID (Owner)'
+        WHEN u.`email` = 'rifqiaqil822@gmail.com'   AND GROUP_CONCAT(r.`name`) = 'Owner'       THEN 'RESMI VALID (Owner)'
         WHEN u.`email` = 'test@example.com'        AND COUNT(mhr.`role_id`) = 0                THEN 'TARGET HAPUS VALID (Akun Uji Tanpa Role)'
         ELSE 'PERIKSA: Akun Tidak Dikenal / Role Tidak Sesuai Spesifikasi'
     END AS `klasifikasi_akun`
