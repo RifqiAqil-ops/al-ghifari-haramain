@@ -42,7 +42,7 @@ class Registration extends Model
 
     public function jamaah(): BelongsTo
     {
-        return $this->belongsTo(Jamaah::class);
+        return $this->belongsTo(Jamaah::class)->withTrashed();
     }
 
     public function package(): BelongsTo
