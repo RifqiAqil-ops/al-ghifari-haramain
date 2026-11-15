@@ -120,6 +120,11 @@
                         <i class="bi bi-whatsapp me-1 text-success"></i> Pesan WA
                     </button>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-semibold text-forest-green" id="equip-tab" data-bs-toggle="tab" data-bs-target="#equip-pane" type="button">
+                        <i class="bi bi-box-seam me-1 text-royal-gold"></i> Perlengkapan ({{ $jamaah->equipmentDistributions->where('status', 'diserahkan')->count() }})
+                    </button>
+                </li>
             </ul>
 
             <div class="tab-content" id="jamaahTabContent">
@@ -329,6 +334,139 @@
                             Belum ada log pesan WhatsApp untuk jamaah ini.
                         </div>
                     @endforelse
+                </div>
+
+                <!-- Tab 5: Perlengkapan Jamaah -->
+                <div class="tab-pane fade" id="equip-pane" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="fw-bold text-dark mb-1">Status & Riwayat Distribusi Perlengkapan</h6>
+                            <p class="text-muted small mb-0">Catatan penyerahan barang secara bertahap atau sekaligus</p>
+                        </div>
+                        @can('equipment.distribute')
+                            <a href="{{ route('equipment.distributions.create', ['jamaah_id' => $jamaah->id]) }}" class="btn btn-sm btn-gold text-dark fw-semibold">
+                                <i class="bi bi-plus-circle me-1"></i> + Distribusikan Barang
+                            </a>
+                        @endcan
+                    </div>
+
+                    @php
+                        $receivedSummary = [];
+                        foreach($jamaah->equipmentDistributions->where('status', 'diserahkan') as $dist) {
+                            foreach($dist->items as $distItem) {
+                                $eqName = $distItem->equipment->name ?? 'Perlengkapan';
+                                $eqUnit = $distItem->equipment->unit ?? 'pcs';
+                                $catName = $distItem->equipment->category->name ?? 'Umum';
+                                if (!isset($receivedSummary[$eqName])) {
+                                    $receivedSummary[$eqName] = [
+                                        'quantity' => 0,
+                                        'unit' => $eqUnit,
+                                        'category' => $catName,
+                                        'last_date' => $dist->distribution_date,
+                                    ];
+                                }
+                                $receivedSummary[$eqName]['quantity'] += $distItem->quantity;
+                                if ($dist->distribution_date && (!$receivedSummary[$eqName]['last_date'] || $dist->distribution_date > $receivedSummary[$eqName]['last_date'])) {
+                                    $receivedSummary[$eqName]['last_date'] = $dist->distribution_date;
+                                }
+                            }
+                        }
+                    @endphp
+
+                    <!-- Card Summary Perlengkapan Diterima -->
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-forest mb-2">
+                                <i class="bi bi-check-all me-1"></i> Ringkasan Barang yang Telah Diterima:
+                            </h6>
+                            @if(count($receivedSummary) > 0)
+                                <div class="row g-2">
+                                    @foreach($receivedSummary as $itemName => $summary)
+                                        <div class="col-sm-6 col-md-4">
+                                            <div class="bg-white p-2 rounded border d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="fw-semibold text-dark small d-block">{{ $itemName }}</span>
+                                                    <small class="text-muted" style="font-size: 0.7rem;">{{ $summary['category'] }}</small>
+                                                </div>
+                                                <span class="badge bg-forest-green text-royal-gold">
+                                                    {{ $summary['quantity'] }} {{ $summary['unit'] }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="text-muted small fst-italic">
+                                    <i class="bi bi-info-circle me-1"></i> Belum ada perlengkapan yang diserahkan untuk jamaah ini.
+                                </div>
+                            @endif
+                            <div class="text-muted small mt-2" style="font-size: 0.72rem;">
+                                * Distribusi dilakukan sesuai kebutuhan masing-masing jamaah. Barang yang belum diserahkan tidak dianggap sebagai kewajiban mutlak.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Transaksi Distribusi -->
+                    <h6 class="fw-bold text-dark mb-2">Riwayat Transaksi Distribusi</h6>
+                    <div class="table-responsive">
+                        <table class="table table-custom align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No. Distribusi</th>
+                                    <th>Tanggal</th>
+                                    <th>Barang Diserahkan</th>
+                                    <th>Penerima / Petugas</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($jamaah->equipmentDistributions->sortByDesc('id') as $dist)
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('equipment.distributions.show', $dist) }}" class="fw-bold text-forest text-decoration-none">
+                                                {{ $dist->distribution_number }}
+                                            </a>
+                                        </td>
+                                        <td class="small">
+                                            {{ $dist->distribution_date ? $dist->distribution_date->format('d/m/Y') : '-' }}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                @foreach($dist->items as $dItem)
+                                                    <span class="badge bg-light text-dark border py-1" style="font-size: 0.7rem;">
+                                                        {{ $dItem->equipment->name ?? 'Barang' }}: <strong>{{ $dItem->quantity }}</strong>
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold text-dark">{{ $dist->received_by ?? '-' }}</div>
+                                            <small class="text-muted d-block" style="font-size: 0.7rem;">Oleh: {{ $dist->officer->name ?? 'Petugas' }}</small>
+                                        </td>
+                                        <td>
+                                            @if($dist->status === 'diserahkan')
+                                                <span class="badge badge-subtle-success">Diserahkan</span>
+                                            @else
+                                                <span class="badge badge-subtle-danger">Dibatalkan</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="{{ route('equipment.distributions.show', $dist) }}" class="btn btn-sm btn-light border" title="Lihat Tanda Terima">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted small">
+                                            Belum ada riwayat distribusi untuk jamaah ini.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

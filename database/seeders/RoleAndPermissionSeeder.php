@@ -48,6 +48,14 @@ class RoleAndPermissionSeeder extends Seeder
             'finance.export',
             'finance.cancel',
 
+            // Peralatan & Logistik
+            'equipment.view',
+            'equipment.create',
+            'equipment.edit',
+            'equipment.delete',
+            'equipment.stock',
+            'equipment.distribute',
+
             // Laporan
             'report.view',
             'report.export',
@@ -86,6 +94,7 @@ class RoleAndPermissionSeeder extends Seeder
             'jamaah.view', 'jamaah.create', 'jamaah.edit', 'jamaah.document', 'jamaah.export',
             'package.view', 'package.create', 'package.edit',
             'departure.view', 'departure.create', 'departure.edit', 'departure.manifest',
+            'equipment.view', 'equipment.create', 'equipment.edit', 'equipment.stock', 'equipment.distribute',
             'finance.view',
             'report.view',
             'whatsapp.view', 'whatsapp.send', 'whatsapp.template',
@@ -100,6 +109,7 @@ class RoleAndPermissionSeeder extends Seeder
             'jamaah.view', 'jamaah.create', 'jamaah.edit', 'jamaah.document',
             'package.view',
             'departure.view', 'departure.manifest',
+            'equipment.view', 'equipment.distribute',
             'notification.view',
         ]);
 
@@ -122,6 +132,7 @@ class RoleAndPermissionSeeder extends Seeder
             'jamaah.view', 'jamaah.export',
             'package.view',
             'departure.view', 'departure.manifest',
+            'equipment.view',
             'finance.view', 'finance.export',
             'report.view', 'report.export',
             'audit.view',

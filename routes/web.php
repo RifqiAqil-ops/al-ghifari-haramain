@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartureController;
+use App\Http\Controllers\EquipmentCategoryController;
+use App\Http\Controllers\EquipmentController;
+use App\Http\Controllers\EquipmentDistributionController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\JamaahController;
 use App\Http\Controllers\NotificationController;
@@ -265,6 +268,53 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:audit.view')->group(function () {
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/audit-logs/{log}', [AuditLogController::class, 'show'])->name('audit-logs.show')->whereNumber('log');
+    });
+
+    // Modul Logistik & Perlengkapan
+    Route::prefix('equipment')->name('equipment.')->group(function () {
+        Route::middleware('permission:equipment.view')->group(function () {
+            Route::get('/', [EquipmentController::class, 'index'])->name('index');
+            Route::get('/items/{equipment}', [EquipmentController::class, 'show'])->name('show')->whereNumber('equipment');
+
+            // Kategori
+            Route::get('/categories', [EquipmentCategoryController::class, 'index'])->name('categories.index');
+
+            // Distribusi
+            Route::get('/distributions', [EquipmentDistributionController::class, 'index'])->name('distributions.index');
+            Route::get('/distributions/{distribution}', [EquipmentDistributionController::class, 'show'])->name('distributions.show')->whereNumber('distribution');
+
+            // Riwayat Mutasi Stok
+            Route::get('/mutations', [EquipmentDistributionController::class, 'mutations'])->name('mutations.index');
+            Route::get('/mutations-list', [EquipmentDistributionController::class, 'mutations'])->name('mutations');
+        });
+
+        Route::middleware('permission:equipment.create')->group(function () {
+            Route::get('/items/create', [EquipmentController::class, 'create'])->name('create');
+            Route::post('/items', [EquipmentController::class, 'store'])->name('store');
+            Route::post('/categories', [EquipmentCategoryController::class, 'store'])->name('categories.store');
+        });
+
+        Route::middleware('permission:equipment.edit')->group(function () {
+            Route::get('/items/{equipment}/edit', [EquipmentController::class, 'edit'])->name('edit')->whereNumber('equipment');
+            Route::put('/items/{equipment}', [EquipmentController::class, 'update'])->name('update')->whereNumber('equipment');
+            Route::put('/categories/{category}', [EquipmentCategoryController::class, 'update'])->name('categories.update')->whereNumber('category');
+        });
+
+        Route::middleware('permission:equipment.delete')->group(function () {
+            Route::delete('/items/{equipment}', [EquipmentController::class, 'destroy'])->name('destroy')->whereNumber('equipment');
+            Route::delete('/categories/{category}', [EquipmentCategoryController::class, 'destroy'])->name('categories.destroy')->whereNumber('category');
+        });
+
+        Route::middleware('permission:equipment.stock')->group(function () {
+            Route::post('/items/{equipment}/stock', [EquipmentController::class, 'mutateStock'])->name('stock.mutate')->whereNumber('equipment');
+            Route::post('/items/{equipment}/mutate-stock', [EquipmentController::class, 'mutateStock'])->name('stock')->whereNumber('equipment');
+        });
+
+        Route::middleware('permission:equipment.distribute')->group(function () {
+            Route::get('/distributions/create', [EquipmentDistributionController::class, 'create'])->name('distributions.create');
+            Route::post('/distributions', [EquipmentDistributionController::class, 'store'])->name('distributions.store');
+            Route::match(['post', 'patch'], '/distributions/{distribution}/cancel', [EquipmentDistributionController::class, 'cancel'])->name('distributions.cancel')->whereNumber('distribution');
+        });
     });
 
     // 10. Modul Pengaturan

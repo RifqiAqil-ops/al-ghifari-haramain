@@ -391,6 +391,35 @@
             </li>
             @endcan
 
+            <!-- 5. LOGISTIK & PERLENGKAPAN -->
+            @canany(['equipment.view', 'equipment.distribute'])
+            <div class="sidebar-heading">Logistik &amp; Perlengkapan</div>
+            @can('equipment.view')
+            <li class="sidebar-item">
+                <a href="{{ route('equipment.index') }}" class="sidebar-link {{ request()->routeIs('equipment.index') || request()->routeIs('equipment.show') || request()->routeIs('equipment.create') || request()->routeIs('equipment.edit') || request()->routeIs('equipment.categories.*') ? 'active' : '' }}">
+                    <i class="bi bi-box-seam-fill"></i>
+                    <span>Inventaris Barang</span>
+                </a>
+            </li>
+            @endcan
+            @canany(['equipment.view', 'equipment.distribute'])
+            <li class="sidebar-item">
+                <a href="{{ route('equipment.distributions.index') }}" class="sidebar-link {{ request()->routeIs('equipment.distributions.*') ? 'active' : '' }}">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Distribusi Jamaah</span>
+                </a>
+            </li>
+            @endcanany
+            @can('equipment.view')
+            <li class="sidebar-item">
+                <a href="{{ route('equipment.mutations.index') }}" class="sidebar-link {{ request()->routeIs('equipment.mutations.*') ? 'active' : '' }}">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Riwayat Mutasi Stok</span>
+                </a>
+            </li>
+            @endcan
+            @endcanany
+
             <!-- 5. LAPORAN & KOMUNIKASI -->
             @canany(['report.view', 'whatsapp.view'])
             <div class="sidebar-heading">Laporan &amp; Layanan</div>

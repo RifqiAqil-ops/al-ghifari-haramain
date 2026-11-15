@@ -66,6 +66,11 @@ class Jamaah extends Model
         return $this->hasMany(WhatsAppMessage::class);
     }
 
+    public function equipmentDistributions(): HasMany
+    {
+        return $this->hasMany(EquipmentDistribution::class)->latest('distribution_date');
+    }
+
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? $this->birth_date->age : null;

@@ -148,6 +148,9 @@ class JamaahController extends Controller
             'registrations.departure',
             'registrations.invoice.validPayments',
             'whatsappMessages' => fn($q) => $q->latest()->take(5),
+            'equipmentDistributions.items.equipment',
+            'equipmentDistributions.departure',
+            'equipmentDistributions.officer',
         ]);
 
         return view('jamaah.show', compact('jamaah'));
