@@ -78,7 +78,7 @@
                 </label>
                 <select name="package_id" id="package_id"
                     class="form-select @error('package_id') is-invalid @enderror"
-                    required onchange="updatePriceOptions(this)">
+                    required onchange="onPackageChange(this)">
                     <option value="">-- Pilih Paket --</option>
                     @foreach($packages as $pkg)
                         <option value="{{ $pkg->id }}"
@@ -106,9 +106,13 @@
                     <option value="">-- Pilih Kloter / Jadwal --</option>
                     @foreach($departures as $dep)
                         <option value="{{ $dep->id }}"
+                            data-package-id="{{ $dep->package_id }}"
                             {{ old('departure_id', $registration->departure_id) == $dep->id ? 'selected' : '' }}>
                             {{ $dep->code }} &bull; {{ $dep->departure_date ? \Carbon\Carbon::parse($dep->departure_date)->translatedFormat('d M Y') : '-' }}
                             {{ $dep->airline ? '(' . $dep->airline . ')' : '' }}
+                            @if($dep->id == $registration->departure_id)
+                                [Kloter Saat Ini]
+                            @endif
                         </option>
                     @endforeach
                 </select>
@@ -244,6 +248,11 @@
 <script>
     let currentPrices = { quad: 0, triple: 0, double: 0, default: 0 };
 
+    function onPackageChange(select) {
+        updatePriceOptions(select);
+        filterDeparturesByPackage(select.value);
+    }
+
     function updatePriceOptions(select) {
         const option = select.options[select.selectedIndex];
         if (option && option.dataset.price) {
@@ -265,5 +274,39 @@
         else if (room === 'double') inputPrice.value = currentPrices.double || currentPrices.default;
         else inputPrice.value = currentPrices.double ? (currentPrices.double * 1.25) : currentPrices.default;
     }
+
+    function filterDeparturesByPackage(packageId) {
+        const departureSelect = document.getElementById('departure_id');
+        if (!departureSelect) return;
+
+        const options = departureSelect.querySelectorAll('option');
+        let selectedStillValid = false;
+
+        options.forEach(opt => {
+            if (!opt.value) {
+                opt.hidden = false;
+                return;
+            }
+            const match = opt.dataset.packageId === String(packageId);
+            opt.hidden = !match;
+            if (match && opt.selected) {
+                selectedStillValid = true;
+            }
+        });
+
+        if (!selectedStillValid && departureSelect.selectedIndex > 0) {
+            const currentSelected = options[departureSelect.selectedIndex];
+            if (currentSelected && currentSelected.hidden) {
+                departureSelect.value = '';
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const packageSelect = document.getElementById('package_id');
+        if (packageSelect && packageSelect.value) {
+            filterDeparturesByPackage(packageSelect.value);
+        }
+    });
 </script>
 @endpush
