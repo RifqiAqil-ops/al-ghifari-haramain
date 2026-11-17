@@ -113,6 +113,87 @@ class RegistrationController extends Controller
         return view('jamaah.registration-detail', compact('registration'));
     }
 
+    public function edit(Registration $registration): View|RedirectResponse
+    {
+        // Registrasi yang sudah batal atau selesai tidak dapat diedit
+        if (in_array($registration->status, ['batal', 'selesai'])) {
+            return redirect()->route('registrations.show', $registration)
+                ->with('toast_error', 'Registrasi dengan status "' . $registration->status_label . '" tidak dapat diedit.');
+        }
+
+        $registration->load(['jamaah', 'package', 'departure', 'invoice.validPayments']);
+
+        $packages = Package::where('status', 'aktif')->orderBy('name')->get();
+        $departures = Departure::where('status', '!=', 'dibatalkan')
+            ->orderBy('departure_date')
+            ->get();
+
+        return view('jamaah.registration-edit', compact('registration', 'packages', 'departures'));
+    }
+
+    public function update(Request $request, Registration $registration): RedirectResponse
+    {
+        // Guard: status akhir tidak dapat diedit
+        if (in_array($registration->status, ['batal', 'selesai'])) {
+            return back()->with('toast_error', 'Registrasi dengan status "' . $registration->status_label . '" tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'package_id'        => ['required', 'exists:packages,id'],
+            'departure_id'      => ['required', 'exists:departures,id'],
+            'registration_date' => ['required', 'date'],
+            'room_type'         => ['required', 'in:quad,triple,double,single'],
+            'agreed_price'      => ['required', 'numeric', 'min:0'],
+            'discount'          => ['nullable', 'numeric', 'min:0'],
+            'status'            => ['required', 'in:terdaftar,proses,siap_berangkat,berangkat'],
+            'special_notes'     => ['nullable', 'string', 'max:1000'],
+        ], [
+            'package_id.required'   => 'Paket perjalanan wajib dipilih.',
+            'departure_id.required' => 'Jadwal keberangkatan wajib dipilih.',
+            'agreed_price.required' => 'Harga kesepakatan wajib diisi.',
+            'status.in'             => 'Status yang dipilih tidak valid.',
+        ]);
+
+        $discount    = (float) ($validated['discount'] ?? 0);
+        $finalPrice  = max(0, (float) $validated['agreed_price'] - $discount);
+        $priceChanged = (float) $registration->final_price !== $finalPrice;
+
+        DB::transaction(function () use ($registration, $validated, $discount, $finalPrice, $priceChanged) {
+            $oldData = $registration->toArray();
+
+            $registration->update([
+                'package_id'        => $validated['package_id'],
+                'departure_id'      => $validated['departure_id'],
+                'registration_date' => $validated['registration_date'],
+                'room_type'         => $validated['room_type'],
+                'agreed_price'      => $validated['agreed_price'],
+                'discount'          => $discount,
+                'final_price'       => $finalPrice,
+                'status'            => $validated['status'],
+                'special_notes'     => $validated['special_notes'] ?? null,
+            ]);
+
+            // Jika biaya berubah, perbarui total_amount invoice dan hitung ulang sisa tagihan
+            if ($priceChanged && $registration->invoice) {
+                $invoice = $registration->invoice;
+                $invoice->total_amount = $finalPrice;
+                $invoice->save();
+                $invoice->recalculateFinancials();
+            }
+
+            ActivityLogger::log(
+                'UPDATE_REGISTRATION',
+                'Pendaftaran',
+                "Memperbarui data registrasi {$registration->registration_number}" . ($priceChanged ? " (biaya diubah menjadi Rp " . number_format($finalPrice, 0, ',', '.') . ")" : ""),
+                $oldData,
+                $registration->fresh()->toArray()
+            );
+        });
+
+        return redirect()->route('registrations.show', $registration)
+            ->with('toast_success', 'Data registrasi ' . $registration->registration_number . ' berhasil diperbarui.');
+    }
+
     public function cancel(Request $request, Registration $registration): RedirectResponse
     {
         $request->validate([

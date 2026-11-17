@@ -135,6 +135,13 @@
                                 <a href="{{ route('registrations.show', $reg) }}" class="btn btn-light border text-forest-green" title="Detail Registrasi">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                @if(!in_array($reg->status, ['batal', 'selesai']))
+                                    @can('jamaah.edit')
+                                        <a href="{{ route('registrations.edit', $reg) }}" class="btn btn-light border text-primary" title="Edit Registrasi">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    @endcan
+                                @endif
                                 @if($reg->status !== 'batal')
                                     <button class="btn btn-light border text-danger" data-bs-toggle="modal" data-bs-target="#cancelRegModal{{ $reg->id }}" title="Batalkan Pendaftaran">
                                         <i class="bi bi-x-circle"></i>

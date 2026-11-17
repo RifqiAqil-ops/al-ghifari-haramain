@@ -91,6 +91,8 @@ Route::middleware('auth')->group(function () {
         Route::patch('/jamaah/{jamaah}', [JamaahController::class, 'update'])->whereNumber('jamaah');
         Route::patch('/jamaahs/{jamaah}', [JamaahController::class, 'update'])->whereNumber('jamaah');
         Route::post('/registrations/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel')->whereNumber('registration');
+        Route::get('/registrations/{registration}/edit', [RegistrationController::class, 'edit'])->name('registrations.edit')->whereNumber('registration');
+        Route::put('/registrations/{registration}', [RegistrationController::class, 'update'])->name('registrations.update')->whereNumber('registration');
     });
 
     Route::middleware('permission:jamaah.delete')->group(function () {
