@@ -215,19 +215,29 @@ class FinanceController extends Controller
     public function storeExpense(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'category_id' => ['required', 'exists:transaction_categories,id'],
-            'departure_id' => ['nullable', 'exists:departures,id'],
-            'amount' => ['required', 'numeric', 'min:1000'],
-            'expense_date' => ['required', 'date'],
+            'title'          => ['required', 'string', 'max:255'],
+            'category_id'    => ['required', 'exists:transaction_categories,id'],
+            'expense_type'   => ['required', 'in:langsung,operasional_umum'],
+            'departure_id'   => ['required_if:expense_type,langsung', 'nullable', 'exists:departures,id'],
+            'amount'         => ['required', 'numeric', 'min:1000'],
+            'expense_date'   => ['required', 'date'],
             'payment_method' => ['required', 'in:transfer,tunai'],
-            'proof_file' => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:3072'],
-            'notes' => ['nullable', 'string'],
+            'proof_file'     => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:3072'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
         ], [
-            'title.required' => 'Nama/keterangan pengeluaran wajib diisi.',
-            'category_id.required' => 'Kategori transaksi wajib dipilih.',
-            'amount.required' => 'Nominal pengeluaran wajib diisi.',
+            'title.required'          => 'Nama/keterangan pengeluaran wajib diisi.',
+            'category_id.required'    => 'Kategori transaksi wajib dipilih.',
+            'expense_type.required'   => 'Jenis pengeluaran wajib dipilih.',
+            'departure_id.required_if'=> 'Kloter terkait wajib dipilih untuk pengeluaran langsung.',
+            'amount.required'         => 'Nominal pengeluaran wajib diisi.',
+            'amount.min'              => 'Nominal pengeluaran minimal Rp 1.000.',
+            'expense_date.required'   => 'Tanggal pengeluaran wajib diisi.',
+            'payment_method.required' => 'Metode pembayaran wajib dipilih.',
         ]);
+
+        if ($validated['expense_type'] === 'operasional_umum') {
+            $validated['departure_id'] = null;
+        }
 
         if ($request->hasFile('proof_file')) {
             $validated['proof_file'] = $request->file('proof_file')->store('expense_proofs', 'public');
@@ -236,6 +246,62 @@ class FinanceController extends Controller
         $expense = FinanceService::recordExpense($validated);
 
         return back()->with('toast_success', "Pengeluaran {$expense->expense_number} sebesar Rp " . number_format($expense->amount, 0, ',', '.') . " berhasil dicatat.");
+    }
+
+    public function editExpense(Expense $expense): View|RedirectResponse
+    {
+        if ($expense->is_cancelled) {
+            return redirect()->route('finance.expenses.index')
+                ->with('toast_error', 'Pengeluaran yang telah dibatalkan tidak dapat diedit.');
+        }
+
+        $expense->load(['category', 'departure', 'recorder']);
+        $categories = TransactionCategory::where('type', 'pengeluaran')->orderBy('name')->get();
+        $departures = Departure::where('status', '!=', 'dibatalkan')->orderBy('departure_date', 'desc')->get();
+
+        return view('finance.expense-edit', compact('expense', 'categories', 'departures'));
+    }
+
+    public function updateExpense(Request $request, Expense $expense): RedirectResponse
+    {
+        if ($expense->is_cancelled) {
+            return redirect()->route('finance.expenses.index')
+                ->with('toast_error', 'Pengeluaran yang telah dibatalkan tidak dapat diubah.');
+        }
+
+        $validated = $request->validate([
+            'title'          => ['required', 'string', 'max:255'],
+            'category_id'    => ['required', 'exists:transaction_categories,id'],
+            'expense_type'   => ['required', 'in:langsung,operasional_umum'],
+            'departure_id'   => ['required_if:expense_type,langsung', 'nullable', 'exists:departures,id'],
+            'amount'         => ['required', 'numeric', 'min:1000'],
+            'expense_date'   => ['required', 'date'],
+            'payment_method' => ['required', 'in:transfer,tunai'],
+            'proof_file'     => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:3072'],
+            'notes'          => ['nullable', 'string', 'max:1000'],
+        ], [
+            'title.required'          => 'Nama/keterangan pengeluaran wajib diisi.',
+            'category_id.required'    => 'Kategori transaksi wajib dipilih.',
+            'expense_type.required'   => 'Jenis pengeluaran wajib dipilih.',
+            'departure_id.required_if'=> 'Kloter terkait wajib dipilih untuk pengeluaran langsung.',
+            'amount.required'         => 'Nominal pengeluaran wajib diisi.',
+            'amount.min'              => 'Nominal pengeluaran minimal Rp 1.000.',
+            'expense_date.required'   => 'Tanggal pengeluaran wajib diisi.',
+            'payment_method.required' => 'Metode pembayaran wajib dipilih.',
+        ]);
+
+        if ($validated['expense_type'] === 'operasional_umum') {
+            $validated['departure_id'] = null;
+        }
+
+        if ($request->hasFile('proof_file')) {
+            $validated['proof_file'] = $request->file('proof_file')->store('expense_proofs', 'public');
+        }
+
+        FinanceService::updateExpense($expense, $validated);
+
+        return redirect()->route('finance.expenses.index')
+            ->with('toast_success', "Pengeluaran {$expense->expense_number} berhasil diperbarui.");
     }
 
     public function refunds(Request $request): View

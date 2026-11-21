@@ -134,17 +134,21 @@ class FinanceService
             }
         } while ($exists);
 
+        $expenseType = $data['expense_type'] ?? (!empty($data['departure_id']) ? 'langsung' : 'operasional_umum');
+        $departureId = $expenseType === 'langsung' ? ($data['departure_id'] ?? null) : null;
+
         $expense = Expense::create([
             'expense_number' => $expenseNumber,
-            'category_id' => $data['category_id'] ?? null,
-            'departure_id' => $data['departure_id'] ?? null,
-            'title' => $data['title'],
-            'expense_date' => $data['expense_date'] ?? Carbon::now()->format('Y-m-d'),
-            'amount' => $data['amount'],
+            'category_id'    => $data['category_id'] ?? null,
+            'departure_id'   => $departureId,
+            'expense_type'   => $expenseType,
+            'title'          => $data['title'],
+            'expense_date'   => $data['expense_date'] ?? Carbon::now()->format('Y-m-d'),
+            'amount'         => $data['amount'],
             'payment_method' => $data['payment_method'] ?? 'transfer',
-            'proof_file' => $data['proof_file'] ?? null,
-            'notes' => $data['notes'] ?? null,
-            'recorded_by' => Auth::id(),
+            'proof_file'     => $data['proof_file'] ?? null,
+            'notes'          => $data['notes'] ?? null,
+            'recorded_by'    => Auth::id(),
         ]);
 
         ActivityLogger::log(
@@ -156,5 +160,45 @@ class FinanceService
         );
 
         return $expense;
+    }
+
+    /**
+     * Update an operational expense with audit log and transaction.
+     */
+    public static function updateExpense(Expense $expense, array $data): Expense
+    {
+        return DB::transaction(function () use ($expense, $data) {
+            $oldData = $expense->toArray();
+
+            $expenseType = $data['expense_type'] ?? (!empty($data['departure_id']) ? 'langsung' : 'operasional_umum');
+            $departureId = $expenseType === 'langsung' ? ($data['departure_id'] ?? null) : null;
+
+            $updateData = [
+                'title'          => $data['title'],
+                'category_id'    => $data['category_id'] ?? null,
+                'expense_type'   => $expenseType,
+                'departure_id'   => $departureId,
+                'amount'         => $data['amount'],
+                'expense_date'   => $data['expense_date'],
+                'payment_method' => $data['payment_method'] ?? 'transfer',
+                'notes'          => $data['notes'] ?? null,
+            ];
+
+            if (array_key_exists('proof_file', $data) && $data['proof_file'] !== null) {
+                $updateData['proof_file'] = $data['proof_file'];
+            }
+
+            $expense->update($updateData);
+
+            ActivityLogger::log(
+                'UPDATE_EXPENSE',
+                'Keuangan',
+                "Memperbarui pengeluaran operasional {$expense->expense_number} '{$expense->title}' sejumlah Rp " . number_format($expense->amount, 0, ',', '.'),
+                $oldData,
+                $expense->fresh()->toArray()
+            );
+
+            return $expense;
+        });
     }
 }

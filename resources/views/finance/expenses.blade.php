@@ -56,12 +56,14 @@
                     <tr>
                         <th>No Transaksi</th>
                         <th>Keterangan Pengeluaran</th>
+                        <th>Jenis</th>
                         <th>Kategori</th>
                         <th>Alokasi Kloter</th>
                         <th>Tanggal</th>
                         <th>Metode</th>
                         <th class="text-end">Nominal (Rp)</th>
                         <th>Bukti</th>
+                        <th class="text-end">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,6 +77,13 @@
                                 <span class="fw-semibold text-dark">{{ $exp->title }}</span>
                                 @if($exp->notes)
                                     <span class="text-muted small d-block">{{ $exp->notes }}</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($exp->isDirect())
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Langsung</span>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-secondary border">Operasional Umum</span>
                                 @endif
                             </td>
                             <td>
@@ -105,10 +114,21 @@
                                     <span class="text-muted small">-</span>
                                 @endif
                             </td>
+                            <td class="text-end">
+                                @if(!$exp->is_cancelled)
+                                    @can('finance.expense')
+                                        <a href="{{ route('finance.expenses.edit', $exp) }}" class="btn btn-sm btn-light border text-primary" title="Edit Pengeluaran">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    @endcan
+                                @else
+                                    <span class="badge bg-light text-muted border">Dibatalkan</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="10" class="text-center py-5 text-muted">
                                 <i class="bi bi-wallet2 display-4 mb-3 d-block"></i>
                                 <h6 class="fw-semibold">Belum ada catatan pengeluaran.</h6>
                             </td>
@@ -159,9 +179,17 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold small">Alokasi Rombongan / Kloter (Opsional)</label>
-                            <select name="departure_id" class="form-select">
-                                <option value="">-- Operasional Umum Travel --</option>
+                            <label class="form-label fw-semibold small">Jenis Pengeluaran <span class="text-danger">*</span></label>
+                            <select name="expense_type" id="new_expense_type" class="form-select" required onchange="toggleNewDepartureField(this.value)">
+                                <option value="langsung">Pengeluaran Langsung (Kloter Tertentu)</option>
+                                <option value="operasional_umum">Pengeluaran Operasional Umum (Kantor / Overhead)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12" id="new_departure_container">
+                            <label class="form-label fw-semibold small">Alokasi Rombongan / Kloter <span class="text-danger">*</span></label>
+                            <select name="departure_id" id="new_departure_id" class="form-select" required>
+                                <option value="">-- Pilih Kloter Terkait --</option>
                                 @foreach($departures as $dep)
                                     <option value="{{ $dep->id }}">{{ $dep->code }} - {{ $dep->package->name ?? '-' }} ({{ $dep->departure_date ? $dep->departure_date->format('d/m/Y') : '' }})</option>
                                 @endforeach
@@ -204,3 +232,20 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    function toggleNewDepartureField(type) {
+        const container = document.getElementById('new_departure_container');
+        const select = document.getElementById('new_departure_id');
+        if (type === 'langsung') {
+            container.style.display = 'block';
+            select.required = true;
+        } else {
+            container.style.display = 'none';
+            select.required = false;
+            select.value = '';
+        }
+    }
+</script>
+@endpush

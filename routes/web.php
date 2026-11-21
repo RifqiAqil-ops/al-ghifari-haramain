@@ -177,6 +177,8 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware('permission:finance.expense')->group(function () {
             Route::post('/expenses', [FinanceController::class, 'storeExpense'])->name('expenses.store');
+            Route::get('/expenses/{expense}/edit', [FinanceController::class, 'editExpense'])->name('expenses.edit')->whereNumber('expense');
+            Route::put('/expenses/{expense}', [FinanceController::class, 'updateExpense'])->name('expenses.update')->whereNumber('expense');
         });
 
         Route::middleware('permission:finance.refund')->group(function () {
@@ -206,6 +208,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/payments', [ReportController::class, 'payments'])->name('payments');
         Route::get('/receivables', [ReportController::class, 'receivables'])->name('receivables');
         Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
+        Route::get('/profit-loss-departures', [ReportController::class, 'departuresProfitLoss'])->name('profit-loss-departures');
+        Route::get('/profit-loss-departures/{departure}', [ReportController::class, 'departureProfitLossDetail'])->name('profit-loss-departures.show')->whereNumber('departure');
         Route::get('/departures', [ReportController::class, 'departures'])->name('departures');
     });
 

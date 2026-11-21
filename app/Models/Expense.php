@@ -15,6 +15,7 @@ class Expense extends Model
         'expense_number',
         'category_id',
         'departure_id',
+        'expense_type',
         'title',
         'expense_date',
         'amount',
@@ -33,6 +34,46 @@ class Expense extends Model
             'amount' => 'decimal:2',
             'is_cancelled' => 'boolean',
         ];
+    }
+
+    public function isDirect(): bool
+    {
+        return $this->expense_type === 'langsung' || (!empty($this->departure_id) && empty($this->expense_type));
+    }
+
+    public function isGeneral(): bool
+    {
+        return $this->expense_type === 'operasional_umum' || (empty($this->departure_id) && empty($this->expense_type));
+    }
+
+    public function getExpenseTypeLabelAttribute(): string
+    {
+        return $this->isDirect() ? 'Langsung (Kloter)' : 'Operasional Umum';
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_cancelled', false);
+    }
+
+    public function scopeDirect($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('expense_type', 'langsung')
+              ->orWhere(function ($sq) {
+                  $sq->whereNull('expense_type')->whereNotNull('departure_id');
+              });
+        });
+    }
+
+    public function scopeGeneral($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('expense_type', 'operasional_umum')
+              ->orWhere(function ($sq) {
+                  $sq->whereNull('expense_type')->whereNull('departure_id');
+              });
+        });
     }
 
     public function category(): BelongsTo

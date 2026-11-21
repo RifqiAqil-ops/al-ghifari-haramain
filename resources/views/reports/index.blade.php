@@ -98,6 +98,35 @@
         </div>
     </div>
 
+    <!-- Card 3B: Laporan Laba Rugi per Kloter -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm rounded-3 h-100 p-3 hover-shadow transition">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="stat-icon bg-success-subtle text-success p-3 rounded-3">
+                    <i class="bi bi-pie-chart-fill fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0">Laba Rugi per Kloter</h6>
+                    <span class="text-muted small">Sebelum &amp; Setelah Alokasi Biaya Umum</span>
+                </div>
+            </div>
+            <p class="small text-muted mb-4">
+                Analisis profitabilitas per rombongan: pendapatan kontrak jamaah dikurangi biaya langsung dan alokasi overhead kantor.
+            </p>
+            <div class="mt-auto d-flex gap-2">
+                <a href="{{ route('reports.profit-loss-departures') }}" class="btn btn-outline-success btn-sm w-100">
+                    <i class="bi bi-eye me-1"></i> Buka Laporan
+                </a>
+                <a href="{{ route('reports.profit-loss-departures', ['export' => 'excel']) }}" class="btn btn-success btn-sm" title="Download Excel">
+                    <i class="bi bi-file-earmark-excel"></i>
+                </a>
+                <a href="{{ route('reports.profit-loss-departures', ['export' => 'pdf']) }}" class="btn btn-danger btn-sm" title="Download PDF">
+                    <i class="bi bi-file-pdf"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Card 4: Laporan Keberangkatan Rombongan -->
     <div class="col-md-6 col-lg-4">
         <div class="card border-0 shadow-sm rounded-3 h-100 p-3 hover-shadow transition">
