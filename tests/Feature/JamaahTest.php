@@ -4,15 +4,23 @@ namespace Tests\Feature;
 
 use App\Models\Jamaah;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class JamaahTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(\Database\Seeders\CompanySettingSeeder::class);
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+
         $this->user = User::where('email', 'superadmin@alghifari.com')->first();
     }
 

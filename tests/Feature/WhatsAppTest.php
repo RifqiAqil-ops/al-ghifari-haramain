@@ -4,10 +4,20 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\WhatsAppService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class WhatsAppTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+    }
+
     public function test_whatsapp_service_simulation_mode_records_message(): void
     {
         $waService = app(WhatsAppService::class);

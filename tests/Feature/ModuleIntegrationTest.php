@@ -6,16 +6,24 @@ use App\Models\Departure;
 use App\Models\DepartureChecklist;
 use App\Models\Package;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ModuleIntegrationTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $superAdmin;
     protected User $staff;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(\Database\Seeders\CompanySettingSeeder::class);
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+
         $this->superAdmin = User::where('email', 'superadmin@alghifari.com')->first();
         $this->staff = User::where('email', 'staff@alghifari.com')->first();
     }

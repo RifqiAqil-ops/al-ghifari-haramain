@@ -19,6 +19,16 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\Intelligence\IntelligenceDashboardController;
+use App\Http\Controllers\Intelligence\AiAssistantController;
+use App\Http\Controllers\Intelligence\SmartFinancialController;
+use App\Http\Controllers\Intelligence\PredictiveAnalyticsController;
+use App\Http\Controllers\Intelligence\DepartureIntelligenceController;
+use App\Http\Controllers\Intelligence\DocumentIntelligenceController;
+use App\Http\Controllers\Intelligence\SmartCrmController;
+use App\Http\Controllers\Intelligence\AlertCenterController;
+use App\Http\Controllers\Intelligence\ReportGeneratorController;
+use App\Http\Controllers\Intelligence\AutomationEngineController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -334,6 +344,65 @@ Route::middleware('auth')->group(function () {
         });
         Route::middleware('permission:setting.view')->group(function () {
             Route::get('/', [SettingController::class, 'index'])->name('index');
+        });
+    });
+
+    // 11. AL GHIFARI INTELLIGENCE SYSTEM
+    Route::prefix('intelligence')->name('intelligence.')->middleware('permission:intelligence.view')->group(function () {
+        // 1. Executive Intelligence Dashboard
+        Route::get('/', [IntelligenceDashboardController::class, 'index'])->name('dashboard');
+
+        // 2. AI Business Assistant
+        Route::middleware('permission:intelligence.chat')->group(function () {
+            Route::get('/assistant', [AiAssistantController::class, 'index'])->name('assistant.index');
+            Route::post('/assistant/chat', [AiAssistantController::class, 'chat'])->name('assistant.chat');
+            Route::post('/assistant/new-conversation', [AiAssistantController::class, 'newConversation'])->name('assistant.new');
+        });
+
+        // 3. Smart Financial Intelligence
+        Route::middleware('permission:intelligence.financial')->group(function () {
+            Route::get('/financial', [SmartFinancialController::class, 'index'])->name('financial.index');
+        });
+
+        // 4. Predictive Analytics
+        Route::get('/predictive', [PredictiveAnalyticsController::class, 'index'])->name('predictive.index');
+
+        // 5. Smart Departure Intelligence
+        Route::get('/departures', [DepartureIntelligenceController::class, 'index'])->name('departures.index');
+        Route::get('/departures/{departure}', [DepartureIntelligenceController::class, 'show'])->name('departures.show')->whereNumber('departure');
+
+        // 6. Smart Document Intelligence (OCR)
+        Route::middleware('permission:intelligence.manage')->group(function () {
+            Route::get('/documents', [DocumentIntelligenceController::class, 'index'])->name('documents.index');
+            Route::post('/documents/{document}/analyze', [DocumentIntelligenceController::class, 'analyze'])->name('documents.analyze')->whereNumber('document');
+            Route::post('/documents/ocr/{log}/approve', [DocumentIntelligenceController::class, 'approve'])->name('documents.approve')->whereNumber('log');
+            Route::post('/documents/ocr/{log}/reject', [DocumentIntelligenceController::class, 'reject'])->name('documents.reject')->whereNumber('log');
+        });
+
+        // 7. Smart CRM
+        Route::get('/crm', [SmartCrmController::class, 'index'])->name('crm.index');
+        Route::get('/crm/{jamaah}', [SmartCrmController::class, 'profile'])->name('crm.profile')->whereNumber('jamaah');
+        Route::middleware('permission:whatsapp.send')->group(function () {
+            Route::post('/crm/follow-up', [SmartCrmController::class, 'sendFollowUp'])->name('crm.follow-up');
+        });
+
+        // 8. Smart Alert Center
+        Route::get('/alerts', [AlertCenterController::class, 'index'])->name('alerts.index');
+        Route::post('/alerts/scan', [AlertCenterController::class, 'scan'])->name('alerts.scan');
+        Route::middleware('permission:intelligence.manage')->group(function () {
+            Route::patch('/alerts/{alert}/resolve', [AlertCenterController::class, 'resolve'])->name('alerts.resolve')->whereNumber('alert');
+            Route::patch('/alerts/{alert}/dismiss', [AlertCenterController::class, 'dismiss'])->name('alerts.dismiss')->whereNumber('alert');
+        });
+
+        // 9. AI Report Generator
+        Route::get('/reports', [ReportGeneratorController::class, 'index'])->name('reports.index');
+        Route::get('/reports/print', [ReportGeneratorController::class, 'print'])->name('reports.print');
+
+        // 10. Automation Engine
+        Route::middleware('permission:intelligence.manage')->group(function () {
+            Route::get('/automation', [AutomationEngineController::class, 'index'])->name('automation.index');
+            Route::patch('/automation/{rule}/toggle', [AutomationEngineController::class, 'toggle'])->name('automation.toggle')->whereNumber('rule');
+            Route::post('/automation/{rule}/run', [AutomationEngineController::class, 'runRule'])->name('automation.run')->whereNumber('rule');
         });
     });
 });

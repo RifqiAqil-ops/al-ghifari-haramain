@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class RbacAccessTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $superAdmin;
     protected User $admin;
     protected User $finance;
@@ -16,6 +19,9 @@ class RbacAccessTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+
         $this->superAdmin = User::where('email', 'superadmin@alghifari.com')->first();
         $this->admin = User::where('email', 'admin@alghifari.com')->first();
         $this->finance = User::where('email', 'finance@alghifari.com')->first();

@@ -441,6 +441,77 @@
             @endcan
             @endcanany
 
+            <!-- AL GHIFARI INTELLIGENCE SYSTEM -->
+            @can('intelligence.view')
+            <div class="sidebar-heading text-warning"><i class="bi bi-stars me-1"></i> Al Ghifari Intelligence</div>
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.dashboard') }}" class="sidebar-link {{ request()->routeIs('intelligence.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-cpu text-warning"></i>
+                    <span>Intelligence Center</span>
+                </a>
+            </li>
+            @can('intelligence.chat')
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.assistant.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.assistant.*') ? 'active' : '' }}">
+                    <i class="bi bi-chat-square-text text-warning"></i>
+                    <span>AI Assistant</span>
+                </a>
+            </li>
+            @endcan
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.alerts.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.alerts.*') ? 'active' : '' }}">
+                    <i class="bi bi-bell-fill text-warning"></i>
+                    <span>Smart Alert Center</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.departures.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.departures.*') ? 'active' : '' }}">
+                    <i class="bi bi-airplane-engines text-warning"></i>
+                    <span>Departure Readiness</span>
+                </a>
+            </li>
+            @can('intelligence.financial')
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.financial.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.financial.*') ? 'active' : '' }}">
+                    <i class="bi bi-graph-up-arrow text-warning"></i>
+                    <span>Financial Intelligence</span>
+                </a>
+            </li>
+            @endcan
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.predictive.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.predictive.*') ? 'active' : '' }}">
+                    <i class="bi bi-clock-history text-warning"></i>
+                    <span>Predictive Analytics</span>
+                </a>
+            </li>
+            @can('intelligence.manage')
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.documents.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.documents.*') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-check text-warning"></i>
+                    <span>Document OCR</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.automation.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.automation.*') ? 'active' : '' }}">
+                    <i class="bi bi-robot text-warning"></i>
+                    <span>Automation Engine</span>
+                </a>
+            </li>
+            @endcan
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.crm.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.crm.*') ? 'active' : '' }}">
+                    <i class="bi bi-people-fill text-warning"></i>
+                    <span>Smart CRM</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('intelligence.reports.index') }}" class="sidebar-link {{ request()->routeIs('intelligence.reports.*') ? 'active' : '' }}">
+                    <i class="bi bi-clipboard2-data text-warning"></i>
+                    <span>Executive Reports</span>
+                </a>
+            </li>
+            @endcan
+
             <!-- 6. SISTEM & USER -->
             @canany(['user.view', 'audit.view', 'setting.view'])
             <div class="sidebar-heading">Sistem &amp; Pengaturan</div>

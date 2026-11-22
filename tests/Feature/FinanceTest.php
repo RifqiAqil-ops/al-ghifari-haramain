@@ -6,15 +6,23 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\FinanceService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class FinanceTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected User $user;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(\Database\Seeders\RoleAndPermissionSeeder::class);
+        $this->seed(\Database\Seeders\UserSeeder::class);
+        $this->seed(\Database\Seeders\CompanySettingSeeder::class);
+        $this->seed(\Database\Seeders\DemoDataSeeder::class);
+
         $this->user = User::where('email', 'superadmin@alghifari.com')->first();
     }
 

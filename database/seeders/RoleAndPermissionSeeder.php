@@ -69,6 +69,12 @@ class RoleAndPermissionSeeder extends Seeder
             'notification.view',
             'audit.view',
 
+            // Intelligence System
+            'intelligence.view',
+            'intelligence.chat',
+            'intelligence.manage',
+            'intelligence.financial',
+
             // Pengaturan & User Management
             'setting.view',
             'setting.edit',
@@ -100,6 +106,7 @@ class RoleAndPermissionSeeder extends Seeder
             'whatsapp.view', 'whatsapp.send', 'whatsapp.template',
             'notification.view',
             'user.view',
+            'intelligence.view', 'intelligence.chat', 'intelligence.manage',
         ]);
 
         // 3. Staff Role
@@ -123,6 +130,7 @@ class RoleAndPermissionSeeder extends Seeder
             'finance.view', 'finance.payment', 'finance.expense', 'finance.refund', 'finance.export',
             'report.view', 'report.export',
             'notification.view',
+            'intelligence.view', 'intelligence.chat', 'intelligence.financial',
         ]);
 
         // 5. Manager Role
@@ -137,6 +145,7 @@ class RoleAndPermissionSeeder extends Seeder
             'report.view', 'report.export',
             'audit.view',
             'notification.view',
+            'intelligence.view', 'intelligence.chat', 'intelligence.manage', 'intelligence.financial',
         ]);
     }
 }
