@@ -5,10 +5,16 @@ namespace App\Services\Intelligence\Providers;
 use App\Models\Departure;
 use App\Models\Equipment;
 use App\Models\Expense;
+use App\Models\Hotel;
+use App\Models\HotelCustomer;
+use App\Models\HotelInvoice;
+use App\Models\HotelPayment;
+use App\Models\HotelReservation;
 use App\Models\Invoice;
 use App\Models\Jamaah;
 use App\Models\Payment;
 use App\Models\Registration;
+use App\Services\Hotel\ExchangeRateService;
 use App\Services\Intelligence\Contracts\AiProviderInterface;
 use Carbon\Carbon;
 
@@ -33,7 +39,55 @@ class LocalHeuristicProvider implements AiProviderInterface
             'database_synced' => true,
         ];
 
-        // 1. Intent: Jamaah & Pendaftaran
+        // 1. Intent: Hotel, Akomodasi, Kurs SAR, Kamar, Invoice Hotel
+        if (str_contains($promptLower, 'hotel') || str_contains($promptLower, 'kamar') || str_contains($promptLower, 'kurs') || str_contains($promptLower, 'sar') || str_contains($promptLower, 'riyal') || str_contains($promptLower, 'allotment')) {
+            $totalHotels = Hotel::count();
+            $totalReservations = HotelReservation::where('status', '!=', 'cancelled')->count();
+            $totalRoomsSold = HotelReservation::where('status', '!=', 'cancelled')->sum('total_rooms');
+            
+            $totalHotelSalesSar = HotelInvoice::where('status', '!=', 'batal')->sum('total_amount_sar');
+            $totalHotelSalesIdr = HotelInvoice::where('status', '!=', 'batal')->sum('total_amount_idr');
+            $totalHotelPaidSar = HotelInvoice::where('status', '!=', 'batal')->sum('paid_amount_sar');
+            $totalHotelOutstandingSar = HotelInvoice::where('status', '!=', 'batal')->sum('remaining_amount_sar');
+            $unpaidHotelInvoices = HotelInvoice::whereIn('status', ['issued', 'sebagian'])->count();
+
+            $fxService = new ExchangeRateService();
+            $currentFx = $fxService->getLatestRate('SAR', 'IDR');
+
+            $topHotel = Hotel::withCount('reservationItems')
+                ->orderBy('reservation_items_count', 'desc')
+                ->first();
+
+            $grounding['sources'] = ['hotels', 'hotel_reservations', 'hotel_invoices', 'hotel_exchange_rates'];
+            $grounding['period'] = 'Hotel Business Management Realtime Data';
+            $grounding['live_rate'] = $currentFx['rate'];
+
+            $content = "### Analisis Kinerja Bisnis Hotel & Multi-Currency (SAR/IDR)\n\n" .
+                "- **Kurs Acuan Saat Ini**: **1 SAR = Rp " . number_format($currentFx['rate'], 2, ',', '.') . "** (Sumber: {$currentFx['provider']})\n" .
+                "- **Total Hotel Mitra Terdaftar**: " . number_format($totalHotels, 0, ',', '.') . " hotel\n" .
+                "- **Total Reservasi Aktif**: " . number_format($totalReservations, 0, ',', '.') . " transaksi (" . number_format($totalRoomsSold, 0, ',', '.') . " kamar terjual)\n" .
+                "- **Omzet Penjualan Hotel (SAR)**: **SAR " . number_format($totalHotelSalesSar, 2, ',', '.') . "**\n" .
+                "- **Omzet Terkonversi (IDR)**: **Rp " . number_format($totalHotelSalesIdr, 0, ',', '.') . "**\n" .
+                "- **Penerimaan Kas (Paid SAR)**: SAR " . number_format($totalHotelPaidSar, 2, ',', '.') . "\n" .
+                "- **Piutang Hotel Berjalan (Outstanding)**: SAR " . number_format($totalHotelOutstandingSar, 2, ',', '.') . " ({$unpaidHotelInvoices} invoice belum lunas)\n";
+
+            if ($topHotel) {
+                $content .= "- **Hotel Paling Banyak Dipesan**: {$topHotel->name} ({$topHotel->city}) - {$topHotel->reservation_items_count} item pemesanan\n";
+            }
+
+            $content .= "\n**Wawasan Finansial Valas**:\n" .
+                "- Seluruh invoice hotel yang diterbitkan mengunci kurs acuan (Exchange Rate Snapshot) sehingga nilai tagihan historis terlindungi dari risiko fluktuasi nilai tukar.\n" .
+                "- Pembayaran mixed-currency (setoran dalam IDR) secara otomatis menghitung selisih kurs langsung ke pos Laba/Rugi Valas.";
+
+            return [
+                'content' => $content,
+                'tokens_used' => 170,
+                'grounding' => $grounding,
+                'provider' => $this->getProviderName(),
+            ];
+        }
+
+        // 2. Intent: Jamaah & Pendaftaran
         if (str_contains($promptLower, 'jamaah') || str_contains($promptLower, 'daftar') || str_contains($promptLower, 'peserta')) {
             $totalJamaah = Jamaah::count();
             $activeJamaah = Jamaah::where('status', 'aktif')->count();
@@ -159,7 +213,55 @@ class LocalHeuristicProvider implements AiProviderInterface
             ];
         }
 
-        // 5. Default General Intelligence Summary
+        // 5. Intent: Hotel, Akomodasi, Kurs SAR, Kamar, Invoice Hotel
+        if (str_contains($promptLower, 'hotel') || str_contains($promptLower, 'kamar') || str_contains($promptLower, 'kurs') || str_contains($promptLower, 'sar') || str_contains($promptLower, 'riyal') || str_contains($promptLower, 'allotment')) {
+            $totalHotels = Hotel::count();
+            $totalReservations = HotelReservation::where('status', '!=', 'cancelled')->count();
+            $totalRoomsSold = HotelReservation::where('status', '!=', 'cancelled')->sum('total_rooms');
+            
+            $totalHotelSalesSar = HotelInvoice::where('status', '!=', 'batal')->sum('total_amount_sar');
+            $totalHotelSalesIdr = HotelInvoice::where('status', '!=', 'batal')->sum('total_amount_idr');
+            $totalHotelPaidSar = HotelInvoice::where('status', '!=', 'batal')->sum('paid_amount_sar');
+            $totalHotelOutstandingSar = HotelInvoice::where('status', '!=', 'batal')->sum('remaining_amount_sar');
+            $unpaidHotelInvoices = HotelInvoice::whereIn('status', ['issued', 'sebagian'])->count();
+
+            $fxService = new ExchangeRateService();
+            $currentFx = $fxService->getLatestRate('SAR', 'IDR');
+
+            $topHotel = Hotel::withCount('reservationItems')
+                ->orderBy('reservation_items_count', 'desc')
+                ->first();
+
+            $grounding['sources'] = ['hotels', 'hotel_reservations', 'hotel_invoices', 'hotel_exchange_rates'];
+            $grounding['period'] = 'Hotel Business Management Realtime Data';
+            $grounding['live_rate'] = $currentFx['rate'];
+
+            $content = "### Analisis Kinerja Bisnis Hotel & Multi-Currency (SAR/IDR)\n\n" .
+                "- **Kurs Acuan Saat Ini**: **1 SAR = Rp " . number_format($currentFx['rate'], 2, ',', '.') . "** (Sumber: {$currentFx['provider']})\n" .
+                "- **Total Hotel Mitra Terdaftar**: " . number_format($totalHotels, 0, ',', '.') . " hotel\n" .
+                "- **Total Reservasi Aktif**: " . number_format($totalReservations, 0, ',', '.') . " transaksi (" . number_format($totalRoomsSold, 0, ',', '.') . " kamar terjual)\n" .
+                "- **Omzet Penjualan Hotel (SAR)**: **SAR " . number_format($totalHotelSalesSar, 2, ',', '.') . "**\n" .
+                "- **Omzet Terkonversi (IDR)**: **Rp " . number_format($totalHotelSalesIdr, 0, ',', '.') . "**\n" .
+                "- **Penerimaan Kas (Paid SAR)**: SAR " . number_format($totalHotelPaidSar, 2, ',', '.') . "\n" .
+                "- **Piutang Hotel Berjalan (Outstanding)**: SAR " . number_format($totalHotelOutstandingSar, 2, ',', '.') . " ({$unpaidHotelInvoices} invoice belum lunas)\n";
+
+            if ($topHotel) {
+                $content .= "- **Hotel Paling Banyak Dipesan**: {$topHotel->name} ({$topHotel->city}) - {$topHotel->reservation_items_count} item pemesanan\n";
+            }
+
+            $content .= "\n**Wawasan Finansial Valas**:\n" .
+                "- Seluruh invoice hotel yang diterbitkan mengunci kurs acuan (Exchange Rate Snapshot) sehingga nilai tagihan historis terlindungi dari risiko fluktuasi nilai tukar.\n" .
+                "- Pembayaran mixed-currency (setoran dalam IDR) secara otomatis menghitung selisih kurs langsung ke pos Laba/Rugi Valas.";
+
+            return [
+                'content' => $content,
+                'tokens_used' => 170,
+                'grounding' => $grounding,
+                'provider' => $this->getProviderName(),
+            ];
+        }
+
+        // 6. Default General Intelligence Summary
         $activeJamaah = Jamaah::where('status', 'aktif')->count();
         $upcomingDeparturesCount = Departure::where('departure_date', '>=', now())->where('status', '!=', 'dibatalkan')->count();
         $totalOutstanding = Invoice::where('status', '!=', 'batal')->sum('remaining_amount');

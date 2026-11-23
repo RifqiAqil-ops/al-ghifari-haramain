@@ -441,6 +441,51 @@
             @endcan
             @endcanany
 
+            <!-- HOTEL BUSINESS MANAGEMENT (Lini Bisnis ke-3) -->
+            <div class="sidebar-heading text-warning"><i class="bi bi-buildings-fill me-1"></i> Hotel Management</div>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.dashboard') }}" class="sidebar-link {{ request()->routeIs('hotel.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-speedometer text-warning"></i>
+                    <span>Dashboard Hotel</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.reservations.index') }}" class="sidebar-link {{ request()->routeIs('hotel.reservations.*') ? 'active' : '' }}">
+                    <i class="bi bi-calendar2-check text-warning"></i>
+                    <span>Reservasi Kamar</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.invoices.index') }}" class="sidebar-link {{ request()->routeIs('hotel.invoices.*') ? 'active' : '' }}">
+                    <i class="bi bi-receipt text-warning"></i>
+                    <span>Invoice Multi-Currency</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.rates.index') }}" class="sidebar-link {{ request()->routeIs('hotel.rates.*') ? 'active' : '' }}">
+                    <i class="bi bi-currency-exchange text-warning"></i>
+                    <span>Kurs SAR Live</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.master.index') }}" class="sidebar-link {{ request()->routeIs('hotel.master.*') ? 'active' : '' }}">
+                    <i class="bi bi-buildings text-warning"></i>
+                    <span>Master Hotel &amp; Kamar</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.customers.index') }}" class="sidebar-link {{ request()->routeIs('hotel.customers.*') ? 'active' : '' }}">
+                    <i class="bi bi-people text-warning"></i>
+                    <span>Pelanggan / Agen</span>
+                </a>
+            </li>
+            <li class="sidebar-item">
+                <a href="{{ route('hotel.reports.index') }}" class="sidebar-link {{ request()->routeIs('hotel.reports.*') ? 'active' : '' }}">
+                    <i class="bi bi-pie-chart text-warning"></i>
+                    <span>Konsolidasi Bisnis</span>
+                </a>
+            </li>
+
             <!-- AL GHIFARI INTELLIGENCE SYSTEM -->
             @can('intelligence.view')
             <div class="sidebar-heading text-warning"><i class="bi bi-stars me-1"></i> Al Ghifari Intelligence</div>

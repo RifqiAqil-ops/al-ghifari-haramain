@@ -3,9 +3,11 @@
 namespace App\Services\Intelligence;
 
 use App\Models\Expense;
+use App\Models\HotelInvoice;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Registration;
+use App\Services\Hotel\HotelFinancialService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -68,6 +70,7 @@ class FinancialIntelligenceService
             'health_score' => $score,
             'health_status' => $status,
             'badge_class' => $badgeClass,
+            'hotel_metrics' => (new HotelFinancialService())->getHotelFinancialSummary(),
         ];
     }
 

@@ -19,6 +19,13 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\Hotel\HotelDashboardController;
+use App\Http\Controllers\Hotel\HotelExchangeRateController;
+use App\Http\Controllers\Hotel\HotelReservationController;
+use App\Http\Controllers\Hotel\HotelInvoiceController;
+use App\Http\Controllers\Hotel\HotelMasterController;
+use App\Http\Controllers\Hotel\HotelCustomerController;
+use App\Http\Controllers\Hotel\HotelReportController;
 use App\Http\Controllers\Intelligence\IntelligenceDashboardController;
 use App\Http\Controllers\Intelligence\AiAssistantController;
 use App\Http\Controllers\Intelligence\SmartFinancialController;
@@ -345,6 +352,46 @@ Route::middleware('auth')->group(function () {
         Route::middleware('permission:setting.view')->group(function () {
             Route::get('/', [SettingController::class, 'index'])->name('index');
         });
+    });
+
+    // 12. HOTEL BUSINESS MANAGEMENT (Lini Bisnis ke-3)
+    Route::prefix('hotel')->name('hotel.')->group(function () {
+        // Dashboard
+        Route::get('/', [HotelDashboardController::class, 'index'])->name('dashboard');
+
+        // Exchange Rates Live Engine
+        Route::get('/rates', [HotelExchangeRateController::class, 'index'])->name('rates.index');
+        Route::post('/rates/refresh', [HotelExchangeRateController::class, 'refresh'])->name('rates.refresh');
+        Route::post('/rates/override', [HotelExchangeRateController::class, 'override'])->name('rates.override');
+
+        // Hotel Master & Rooms
+        Route::get('/master', [HotelMasterController::class, 'index'])->name('master.index');
+        Route::get('/master/create', [HotelMasterController::class, 'create'])->name('master.create');
+        Route::post('/master', [HotelMasterController::class, 'store'])->name('master.store');
+        Route::get('/master/{hotel}', [HotelMasterController::class, 'show'])->name('master.show')->whereNumber('hotel');
+        Route::post('/master/{hotel}/room-types', [HotelMasterController::class, 'storeRoomType'])->name('master.room-types.store')->whereNumber('hotel');
+
+        // Customers / Travel Agencies
+        Route::get('/customers', [HotelCustomerController::class, 'index'])->name('customers.index');
+        Route::get('/customers/create', [HotelCustomerController::class, 'create'])->name('customers.create');
+        Route::post('/customers', [HotelCustomerController::class, 'store'])->name('customers.store');
+        Route::get('/customers/{customer}', [HotelCustomerController::class, 'show'])->name('customers.show')->whereNumber('customer');
+
+        // Reservations
+        Route::get('/reservations', [HotelReservationController::class, 'index'])->name('reservations.index');
+        Route::get('/reservations/create', [HotelReservationController::class, 'create'])->name('reservations.create');
+        Route::post('/reservations', [HotelReservationController::class, 'store'])->name('reservations.store');
+        Route::get('/reservations/{reservation}', [HotelReservationController::class, 'show'])->name('reservations.show')->whereNumber('reservation');
+        Route::post('/reservations/{reservation}/cancel', [HotelReservationController::class, 'cancel'])->name('reservations.cancel')->whereNumber('reservation');
+
+        // Invoices & Mixed-Currency Payments
+        Route::get('/invoices', [HotelInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('/invoices/{invoice}', [HotelInvoiceController::class, 'show'])->name('invoices.show')->whereNumber('invoice');
+        Route::get('/invoices/{invoice}/print', [HotelInvoiceController::class, 'print'])->name('invoices.print')->whereNumber('invoice');
+        Route::post('/invoices/{invoice}/payments', [HotelInvoiceController::class, 'storePayment'])->name('invoices.payments.store')->whereNumber('invoice');
+
+        // Consolidated Financial Reports
+        Route::get('/reports', [HotelReportController::class, 'index'])->name('reports.index');
     });
 
     // 11. AL GHIFARI INTELLIGENCE SYSTEM
