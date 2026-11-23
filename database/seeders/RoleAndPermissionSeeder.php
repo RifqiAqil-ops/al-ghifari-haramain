@@ -75,6 +75,11 @@ class RoleAndPermissionSeeder extends Seeder
             'intelligence.manage',
             'intelligence.financial',
 
+            // Hotel Business Management
+            'hotel.view',
+            'hotel.manage',
+            'hotel.finance',
+
             // Pengaturan & User Management
             'setting.view',
             'setting.edit',
@@ -107,6 +112,7 @@ class RoleAndPermissionSeeder extends Seeder
             'notification.view',
             'user.view',
             'intelligence.view', 'intelligence.chat', 'intelligence.manage',
+            'hotel.view', 'hotel.manage',
         ]);
 
         // 3. Staff Role
@@ -131,6 +137,7 @@ class RoleAndPermissionSeeder extends Seeder
             'report.view', 'report.export',
             'notification.view',
             'intelligence.view', 'intelligence.chat', 'intelligence.financial',
+            'hotel.view', 'hotel.finance',
         ]);
 
         // 5. Manager Role
@@ -146,6 +153,7 @@ class RoleAndPermissionSeeder extends Seeder
             'audit.view',
             'notification.view',
             'intelligence.view', 'intelligence.chat', 'intelligence.manage', 'intelligence.financial',
+            'hotel.view', 'hotel.manage', 'hotel.finance',
         ]);
     }
 }

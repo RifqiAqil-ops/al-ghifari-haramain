@@ -263,6 +263,19 @@ class HotelBusinessManagementTest extends TestCase
         $responseReports->assertStatus(200);
     }
 
+    public function test_unauthorized_staff_without_permission_receives_forbidden(): void
+    {
+        $staffUser = User::where('email', 'staff@alghifari.com')->firstOrFail();
+        $this->actingAs($staffUser);
+
+        // Staff lacks hotel.view by default
+        $response = $this->get(route('hotel.dashboard'));
+        $response->assertStatus(403);
+
+        $responseReports = $this->get(route('hotel.reports.index'));
+        $responseReports->assertStatus(403);
+    }
+
     public function test_ai_assistant_understands_hotel_intent(): void
     {
         $this->actingAs($this->superAdmin);

@@ -355,43 +355,55 @@ Route::middleware('auth')->group(function () {
     });
 
     // 12. HOTEL BUSINESS MANAGEMENT (Lini Bisnis ke-3)
-    Route::prefix('hotel')->name('hotel.')->group(function () {
+    Route::prefix('hotel')->name('hotel.')->middleware('permission:hotel.view')->group(function () {
         // Dashboard
         Route::get('/', [HotelDashboardController::class, 'index'])->name('dashboard');
 
         // Exchange Rates Live Engine
         Route::get('/rates', [HotelExchangeRateController::class, 'index'])->name('rates.index');
-        Route::post('/rates/refresh', [HotelExchangeRateController::class, 'refresh'])->name('rates.refresh');
-        Route::post('/rates/override', [HotelExchangeRateController::class, 'override'])->name('rates.override');
+        Route::middleware('permission:hotel.finance')->group(function () {
+            Route::post('/rates/refresh', [HotelExchangeRateController::class, 'refresh'])->name('rates.refresh');
+            Route::post('/rates/override', [HotelExchangeRateController::class, 'override'])->name('rates.override');
+        });
 
         // Hotel Master & Rooms
         Route::get('/master', [HotelMasterController::class, 'index'])->name('master.index');
-        Route::get('/master/create', [HotelMasterController::class, 'create'])->name('master.create');
-        Route::post('/master', [HotelMasterController::class, 'store'])->name('master.store');
+        Route::middleware('permission:hotel.manage')->group(function () {
+            Route::get('/master/create', [HotelMasterController::class, 'create'])->name('master.create');
+            Route::post('/master', [HotelMasterController::class, 'store'])->name('master.store');
+            Route::post('/master/{hotel}/room-types', [HotelMasterController::class, 'storeRoomType'])->name('master.room-types.store')->whereNumber('hotel');
+        });
         Route::get('/master/{hotel}', [HotelMasterController::class, 'show'])->name('master.show')->whereNumber('hotel');
-        Route::post('/master/{hotel}/room-types', [HotelMasterController::class, 'storeRoomType'])->name('master.room-types.store')->whereNumber('hotel');
 
         // Customers / Travel Agencies
         Route::get('/customers', [HotelCustomerController::class, 'index'])->name('customers.index');
-        Route::get('/customers/create', [HotelCustomerController::class, 'create'])->name('customers.create');
-        Route::post('/customers', [HotelCustomerController::class, 'store'])->name('customers.store');
+        Route::middleware('permission:hotel.manage')->group(function () {
+            Route::get('/customers/create', [HotelCustomerController::class, 'create'])->name('customers.create');
+            Route::post('/customers', [HotelCustomerController::class, 'store'])->name('customers.store');
+        });
         Route::get('/customers/{customer}', [HotelCustomerController::class, 'show'])->name('customers.show')->whereNumber('customer');
 
         // Reservations
         Route::get('/reservations', [HotelReservationController::class, 'index'])->name('reservations.index');
-        Route::get('/reservations/create', [HotelReservationController::class, 'create'])->name('reservations.create');
-        Route::post('/reservations', [HotelReservationController::class, 'store'])->name('reservations.store');
+        Route::middleware('permission:hotel.manage')->group(function () {
+            Route::get('/reservations/create', [HotelReservationController::class, 'create'])->name('reservations.create');
+            Route::post('/reservations', [HotelReservationController::class, 'store'])->name('reservations.store');
+            Route::post('/reservations/{reservation}/cancel', [HotelReservationController::class, 'cancel'])->name('reservations.cancel')->whereNumber('reservation');
+        });
         Route::get('/reservations/{reservation}', [HotelReservationController::class, 'show'])->name('reservations.show')->whereNumber('reservation');
-        Route::post('/reservations/{reservation}/cancel', [HotelReservationController::class, 'cancel'])->name('reservations.cancel')->whereNumber('reservation');
 
         // Invoices & Mixed-Currency Payments
         Route::get('/invoices', [HotelInvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/{invoice}', [HotelInvoiceController::class, 'show'])->name('invoices.show')->whereNumber('invoice');
         Route::get('/invoices/{invoice}/print', [HotelInvoiceController::class, 'print'])->name('invoices.print')->whereNumber('invoice');
-        Route::post('/invoices/{invoice}/payments', [HotelInvoiceController::class, 'storePayment'])->name('invoices.payments.store')->whereNumber('invoice');
+        Route::middleware('permission:hotel.finance')->group(function () {
+            Route::post('/invoices/{invoice}/payments', [HotelInvoiceController::class, 'storePayment'])->name('invoices.payments.store')->whereNumber('invoice');
+        });
 
         // Consolidated Financial Reports
-        Route::get('/reports', [HotelReportController::class, 'index'])->name('reports.index');
+        Route::middleware('permission:hotel.finance')->group(function () {
+            Route::get('/reports', [HotelReportController::class, 'index'])->name('reports.index');
+        });
     });
 
     // 11. AL GHIFARI INTELLIGENCE SYSTEM

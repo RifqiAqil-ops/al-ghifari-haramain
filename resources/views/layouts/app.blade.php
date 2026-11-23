@@ -442,6 +442,7 @@
             @endcanany
 
             <!-- HOTEL BUSINESS MANAGEMENT (Lini Bisnis ke-3) -->
+            @can('hotel.view')
             <div class="sidebar-heading text-warning"><i class="bi bi-buildings-fill me-1"></i> Hotel Management</div>
             <li class="sidebar-item">
                 <a href="{{ route('hotel.dashboard') }}" class="sidebar-link {{ request()->routeIs('hotel.dashboard') ? 'active' : '' }}">
@@ -479,12 +480,15 @@
                     <span>Pelanggan / Agen</span>
                 </a>
             </li>
+            @can('hotel.finance')
             <li class="sidebar-item">
                 <a href="{{ route('hotel.reports.index') }}" class="sidebar-link {{ request()->routeIs('hotel.reports.*') ? 'active' : '' }}">
                     <i class="bi bi-pie-chart text-warning"></i>
                     <span>Konsolidasi Bisnis</span>
                 </a>
             </li>
+            @endcan
+            @endcan
 
             <!-- AL GHIFARI INTELLIGENCE SYSTEM -->
             @can('intelligence.view')
